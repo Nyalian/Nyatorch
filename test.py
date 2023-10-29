@@ -9,8 +9,8 @@ from dataset import Dataset
 from optimizer import SGD
 
 net = Sequential(
-    LinearLayer(2, 4),
-    Sigmoid(),
+    LinearLayer(2, 4,sigmoid),
+
     LinearLayer(4, 1),
     Sigmoid(),
 )
@@ -30,7 +30,7 @@ for epoch in range(num_epochs):
     for inputs, target in data:
         # 使用权重更新对象进行训练
         outputs = net(inputs)
-        loss_value, gradients = bp.backward(target, outputs)
+        net.backward(loss, target)
         total_loss += loss
 
     if (epoch + 1) % 1000 == 0:
