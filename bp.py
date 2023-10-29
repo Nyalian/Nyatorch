@@ -1,3 +1,4 @@
+# 可能已经弃用
 class Backpropagation:
     def __init__(self, model, loss):
         self.model = model
