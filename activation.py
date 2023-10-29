@@ -2,20 +2,24 @@ import numpy as np
 from module import Module
 from numpy import ndarray
 
-class ReLU(Module):
+
+class Activation(Module):
+    pass
+
+
+class ReLU(Activation):
 
     def __init__(self):
         pass
 
     def forward(self, input: ndarray) -> ndarray:
+        return input * (input > 0)
 
-        return input*(input>0)
+    def backward(self, input: ndarray) -> ndarray:
+        return (input > 0).astype(float)
 
-    def gradient(self, input: ndarray) -> ndarray:
 
-        return (input>0).astype(float)
-
-class Sigmoid(Module):
+class Sigmoid(Activation):
 
     def __init__(self):
         pass
@@ -23,18 +27,17 @@ class Sigmoid(Module):
     def forward(self, input: ndarray) -> ndarray:
         return 1 / (1 + np.exp(-input))
 
-    def gradient(self, input: ndarray) -> ndarray:
-        return self.forward(input) * (1-self.forward(input))
+    def backward(self, input: ndarray) -> ndarray:
+        return self.forward(input) * (1 - self.forward(input))
 
-class Linear(Module):
+
+class Linear(Activation):
 
     def __init__(self):
         pass
 
     def forward(self, input: ndarray) -> ndarray:
-
         return input
 
-    def gradient(self, input: ndarray) -> ndarray:
-
+    def backward(self, input: ndarray) -> ndarray:
         return np.ones_like(input).astype(float)
