@@ -11,11 +11,12 @@ class LinearLayer(Module):
         self.in_features = in_features
         self.out_features = out_features
         self.weights = np.random.rand(out_features, in_features)
-        self.gradient = np.zeros_like(self.weights)
+        self.bias = np.random.rand(out_features, 1)
+        self.gradient_weights = np.zeros_like(self.weights)
+        self.gradient_bias = np.zeros_like(self.bias)
 
     def forward(self, input: ndarray) -> ndarray:
-        return self.weights @ input
+        return self.weights @ input + self.bias
 
     def backward(self, input: ndarray) -> ndarray:
-         return input @ self.weights
-
+        return input @ self.weights

@@ -13,4 +13,4 @@ class SGD(Optimizer):
     def update(self) -> None:
         for module in self.net:
             if isinstance(module, LinearLayer):
-                module.weights -= self.learning_rate * module.gradient
+                module.weights -= self.learning_rate * module.gradient_weights
