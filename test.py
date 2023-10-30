@@ -14,8 +14,8 @@ net = Sequential(
     Sigmoid(),
 )
 
-x = np.array([[0, 1], [0, 0], [1, 0], [1, 1]])
-y = np.array([[1], [0], [1], [0]])
+x = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+y = np.array([[0], [1], [1], [0]])
 data = Dataset(x, y)
 
 num_epochs = 10000
@@ -34,7 +34,5 @@ for epoch in range(num_epochs):
     if (epoch + 1) % 100 == 0:
         print(f"Epoch {epoch + 1}, Loss: {total_loss}")
 
-print(f"{[0,0]}={net(np.array([0,0]))>0.5}")
-print(f"{[1,0]}={net(np.array([1,0]))>0.5}")
-print(f"{[0,1]}={net(np.array([0,1]))>0.5}")
-print(f"{[1,1]}={net(np.array([1,1]))>0.5}")
+for inputs, target in data:
+    print(f"{inputs}={net(inputs)>0.5}")
