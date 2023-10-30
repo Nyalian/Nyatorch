@@ -14,3 +14,4 @@ class SGD(Optimizer):
         for module in self.net:
             if isinstance(module, LinearLayer):
                 module.weights -= self.learning_rate * module.gradient_weights
+                module.bias -= self.learning_rate * module.gradient_bias
