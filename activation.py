@@ -41,3 +41,12 @@ class Linear(Activation):
 
     def backward(self, input: ndarray) -> ndarray:
         return np.ones_like(input).astype(float)
+
+
+class Hebb_act(Activation):
+
+    def __init__(self):
+        pass
+
+    def forward(self, input: ndarray) -> ndarray:
+        return np.array([1 if x >= 0 else -1 for x in input])

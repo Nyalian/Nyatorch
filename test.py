@@ -1,6 +1,7 @@
 import numpy as np
 
 from activation import Sigmoid
+from bp import Backpropagation
 from layer import LinearLayer
 from loss import MeanSquaredError
 from sequential import Sequential
@@ -14,14 +15,15 @@ net = Sequential(
     Sigmoid(),
 )
 
-x = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-y = np.array([[0], [1], [1], [0]])
+x = np.array([[0, 1], [0, 0], [1, 0], [1, 1]])
+y = np.array([[1], [0], [1], [0]])
 data = Dataset(x, y)
 
-num_epochs = 10000
+num_epochs = 1000
 learning_rate = 0.5
 loss = MeanSquaredError()
 optimizer = SGD(net, learning_rate)
+bp = Backpropagation(net, loss)
 for epoch in range(num_epochs):
     total_loss = 0
 
@@ -34,5 +36,4 @@ for epoch in range(num_epochs):
     if (epoch + 1) % 100 == 0:
         print(f"Epoch {epoch + 1}, Loss: {total_loss}")
 
-for inputs, target in data:
-    print(f"{inputs}={net(inputs)>0.5}")
+print(net(np.array([0,0])))
