@@ -50,3 +50,12 @@ class Hebb_act(Activation):
 
     def forward(self, input: ndarray) -> ndarray:
         return np.array([1 if x >= 0 else -1 for x in input])
+
+
+class MLP_act(Activation):
+
+    def __init__(self):
+        pass
+
+    def forward(self, input: ndarray) -> ndarray:
+        return input >= 0

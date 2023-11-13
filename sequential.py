@@ -42,16 +42,14 @@ class Sequential(Module):
             if isinstance(module, Activation):
                 delta = module.backward(para) * delta
 
-    def hebb(self, input: ndarray, target:ndarray, learning_rate):
+    def hebb(self, input: ndarray, target: ndarray, learning_rate):
         for module in self._modules:
-            if isinstance(module , LinearLayer):
-                module.weights += learning_rate*(target @ input.T)
+            if isinstance(module, LinearLayer):
+                module.weights += learning_rate * (target @ input.T)
 
-    def mlp_func(self,input: ndarray,output: ndarray, target:ndarray):
+    def mlp_func(self, input: ndarray, output: ndarray, target: ndarray):
         for module in self._modules:
-            if isinstance(module , LinearLayer):
-                pass
-            #todo
-
-
-
+            if isinstance(module, LinearLayer):
+                module.weights += (target - output) @ input.T
+                module.bias += (target - output).sum()
+            # todo
