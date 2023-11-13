@@ -18,3 +18,18 @@ class MeanSquaredError(Loss):
 
     def gradient(self, prediction, target):
         return prediction - target
+
+class CrossEntropy(Loss):
+
+    def _softmax(self, z):
+        return np.exp(z) / np.sum(np.exp(z), axis=0, keepdims=True)
+
+    def calculate(self, prediction, target):
+        m = prediction.shape[1]
+        prediction = self._softmax(prediction)
+        return -(target * np.log(prediction)).sum() / m
+
+    def gradient(self, prediction, target):
+        prediction = self._softmax(prediction)
+        m = prediction.shape[1]
+        return (prediction - target) / m
