@@ -1,10 +1,12 @@
 import numpy as np
 
-from layer import Conv2d
+from layer import Conv2d, Flatten
 
-x = np.array([[[2, 3], [4, 5]]])
+x = np.array([[[1.09824655, -1.47418237],
+               [1.70464524, -1.16688851]]])
 
-c = Conv2d(1, 1, 2, 0, 1)
+c = Flatten()
 
 y = c.forward(x)
-print(y)
+z=c.backward(y)
+print(z)

@@ -1,7 +1,7 @@
 from numpy import ndarray
 from typing import Iterator, List
 from activation import Activation
-from layer import LinearLayer
+from layer import LinearLayer, ConvNd, Flatten
 from loss import Loss
 from module import Module
 
@@ -39,8 +39,13 @@ class Sequential(Module):
                 module.gradient_weights = delta @ para.T
                 module.gradient_bias = delta.sum(axis=1, keepdims=True)
                 delta = module.weights.T @ delta
+            if isinstance(module, ConvNd):
+                module.gradient_weights = module.gradient_cal(para, delta)
+                delta = module.backward(delta)
             if isinstance(module, Activation):
                 delta = module.backward(para) * delta
+            if isinstance(module, Flatten):
+                delta = module.backward(delta)
 
     def hebb(self, input: ndarray, target: ndarray, learning_rate):
         for module in self._modules:
@@ -52,4 +57,3 @@ class Sequential(Module):
             if isinstance(module, LinearLayer):
                 module.weights += (target - output) @ input.T
                 module.bias += (target - output).sum()
-
