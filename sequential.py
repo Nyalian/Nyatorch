@@ -52,4 +52,4 @@ class Sequential(Module):
             if isinstance(module, LinearLayer):
                 module.weights += (target - output) @ input.T
                 module.bias += (target - output).sum()
-            # todo
+
