@@ -8,5 +8,5 @@ x = np.array([[[1.09824655, -1.47418237],
 c = Flatten()
 
 y = c.forward(x)
-z=c.backward(y)
-print(z)
+
+print(y)

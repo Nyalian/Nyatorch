@@ -31,6 +31,10 @@ class ConvNd(Module):
         self.kernel_size = kernel_size
         self.padding = padding
         self.stride = stride
+        self.weights = None
+        self.bias = None
+        self.gradient_weights = None
+        self.gradient_bias = None
 
     def gradient_cal(self, para: ndarray, delta: ndarray) -> ndarray:
         pass
@@ -55,14 +59,16 @@ class Conv2d(ConvNd):
         bound = np.sqrt(6. / (self.in_channel + self.out_channel))
         self.weights = np.random.uniform(-bound, bound, (self.out_channel, self.in_channel, kernel_size, kernel_size))
         self.gradient_weights = np.zeros_like(self.weights)
+        self.bias = np.random.rand(self.out_channel)
+        self.gradient_bias = np.zeros_like(self.bias)
 
-    def conv_mul(self, input: ndarray, kernel: ndarray) -> ndarray:
+    def conv_mul(self, input: ndarray, kernel: ndarray, bias: int) -> ndarray:
         output = np.zeros(((input.shape[0] - self.kernel_size) // self.stride + 1,
                            (input.shape[1] - self.kernel_size) // self.stride + 1))
         for i in range(output.shape[0]):
             for j in range(output.shape[1]):
                 output[i][j] = (input[i * self.stride:i * self.stride + self.kernel_size,
-                                j * self.stride:j * self.stride + self.kernel_size] * kernel).sum()
+                                j * self.stride:j * self.stride + self.kernel_size] * kernel).sum() + bias
         return output
 
     def conv_mul_bp(self, input: ndarray, kernel: ndarray) -> ndarray:
@@ -95,7 +101,7 @@ class Conv2d(ConvNd):
 
         for i in range(self.out_channel):
             for j in range(self.in_channel):
-                output[i] += self.conv_mul(padded_input[j], self.weights[i, j])
+                output[i] += self.conv_mul(padded_input[j], self.weights[i, j], self.bias[i])
 
         return output
 
@@ -117,7 +123,7 @@ class Flatten(Module):
 
     def forward(self, input: ndarray) -> ndarray:
         self.in_feature = input.shape
-        return input.flatten()
+        return (input.flatten()).reshape(-1, 1)
 
     def backward(self, input: ndarray) -> ndarray:
         return input.reshape(self.in_feature)
