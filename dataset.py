@@ -27,7 +27,6 @@ class Dataset:
         for batch_idx in range(self.nums_batch):
             x = self.sample[self.batch_size * batch_idx:min(self.batch_size * (batch_idx + 1), self.sample.shape[0])]
             y = self.label[self.batch_size * batch_idx:min(self.batch_size * (batch_idx + 1), self.label.shape[0])]
-            # todo
 
             if self.is_transpose:
                 yield (x.T, y.T)
@@ -79,12 +78,12 @@ def load_MINST_conv():
         train_labels = np.frombuffer(lbpath.read(), np.uint8, offset=8)
     with gzip.open(path[1], 'rb') as imgpath:
         train_images = np.frombuffer(imgpath.read(), np.uint8, offset=16).reshape(len(train_labels), 28, 28)
-        # train_images = np.expand_dims(train_images, axis=1)
+        train_images = np.expand_dims(train_images, axis=1)
     with gzip.open(path[2], 'rb') as lbpath:
         test_labels = np.frombuffer(lbpath.read(), np.uint8, offset=8)
     with gzip.open(path[3], 'rb') as imgpath:
         test_images = np.frombuffer(imgpath.read(), np.uint8, offset=16).reshape(len(test_labels), 28, 28)
-        # test_images = np.expand_dims(test_images, axis=1)
+        test_images = np.expand_dims(test_images, axis=1)
 
     train_onehot = np.zeros((len(train_labels), 10))
     for i in range(len(train_labels)):
@@ -94,5 +93,5 @@ def load_MINST_conv():
     for i in range(len(test_labels)):
         test_onehot[i, test_labels[i]] = 1
 
-    return Dataset(train_images, train_onehot, batch_size=1, is_transpose=False), Dataset(test_images, test_onehot,
+    return Dataset(train_images, train_onehot, batch_size=32, is_transpose=False), Dataset(test_images, test_onehot,
                                                                                           is_transpose=False)

@@ -13,16 +13,16 @@ import scipy.io
 train, test = load_MINST_conv()
 
 net = Sequential(
-    Conv2d(1, 10, 3),
+    Conv2d(1, 1, 3),
     Sigmoid(),
-    Conv2d(10, 20, 3),
+    Conv2d(1, 1, 3),
     ReLU(),
     Flatten(),
-    LinearLayer(11520, 10),
+    LinearLayer(576, 10),
 )
 
-num_epochs = 20
-learning_rate = 0.01
+num_epochs = 5
+learning_rate = 0.02
 loss = MeanSquaredError()
 optimizer = SGD(net, learning_rate)
 
@@ -34,7 +34,16 @@ for epoch in range(num_epochs):
         outputs = net(inputs)
         net.backward(loss, target)
         total_loss += loss.calculate(outputs, target)
-        print(inputs.shape)
+        # print(inputs.shape)
         optimizer.update()
-    if (epoch + 1) % 5 == 0:
+    if (epoch + 1) % 1 == 0:
         print(f"Epoch {epoch + 1}, Loss: {total_loss}")
+
+corrects = 0
+for inputs, target in test:
+    pred = net(inputs)
+    pred_idx = np.argmax(pred, axis=0)
+    label_idx = np.argmax(target, axis=0)
+    corrects += (pred_idx == label_idx) / test.total_length()
+
+print(corrects)

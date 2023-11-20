@@ -1,5 +1,6 @@
 import numba as numba
 import numpy as np
+from numba import njit, jit
 
 from module import Module
 from numpy import ndarray
@@ -85,9 +86,9 @@ class Conv2d(ConvNd):
 
     def gradient_cal(self, para: ndarray, delta: ndarray) -> ndarray:
         gradient = np.zeros_like(self.gradient_weights)
-        para = np.pad(para, ((0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+        para = np.pad(para, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
 
-        for para_b, delta_b in zip(para,delta):
+        for para_b, delta_b in zip(para, delta):
             for i in range(self.out_channel):
                 for j in range(self.in_channel):
                     for k in range(delta.shape[1]):
@@ -97,7 +98,6 @@ class Conv2d(ConvNd):
 
         return gradient
 
-    @numba.jit(nopython=True)
     def forward(self, input: ndarray) -> ndarray:
         output = np.zeros(
             (input.shape[0], self.out_channel, (input.shape[2] - self.kernel_size + 2 * self.padding) // self.stride + 1
@@ -120,7 +120,7 @@ class Conv2d(ConvNd):
                 for j in range(self.out_channel):
                     output[g, i] += self.conv_mul_bp(input[g, j], self.weights[j, i])
 
-        return output[:, :, self.padding:output.shape[1] - self.padding, self.padding:output.shape[2] - self.padding]
+        return output[:, :, self.padding:output.shape[2] - self.padding, self.padding:output.shape[3] - self.padding]
 
 
 class Flatten(Module):

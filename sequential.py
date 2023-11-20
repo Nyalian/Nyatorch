@@ -41,7 +41,7 @@ class Sequential(Module):
                 delta = module.backward(delta)
             if isinstance(module, ConvNd):
                 module.gradient_weights = module.gradient_cal(para, delta)
-                module.gradient_bias = delta.sum(axis=(1, 2))
+                module.gradient_bias = delta.sum(axis=(0, 2, 3))
                 delta = module.backward(delta)
             if isinstance(module, Activation):
                 delta = module.backward(para) * delta
