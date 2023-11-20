@@ -20,7 +20,7 @@ class LinearLayer(Module):
         return self.weights @ input + self.bias
 
     def backward(self, input: ndarray) -> ndarray:
-        return input @ self.weights
+        return self.weights.T @ input
 
 
 class ConvNd(Module):

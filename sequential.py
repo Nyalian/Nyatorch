@@ -38,7 +38,7 @@ class Sequential(Module):
             if isinstance(module, LinearLayer):
                 module.gradient_weights = delta @ para.T
                 module.gradient_bias = delta.sum(axis=1, keepdims=True)
-                delta = module.weights.T @ delta
+                delta = module.backward(delta)
             if isinstance(module, ConvNd):
                 module.gradient_weights = module.gradient_cal(para, delta)
                 module.gradient_bias = delta.sum(axis=(1, 2))
