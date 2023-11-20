@@ -1,6 +1,6 @@
 import numpy as np
 
-from activation import Sigmoid, Hebb_act
+from activation import Sigmoid, HebbAct
 from layer import LinearLayer
 from loss import MeanSquaredError
 from sequential import Sequential
@@ -23,7 +23,7 @@ def show(x):
 
 net = Sequential(
     LinearLayer(30,30),
-    Hebb_act(),
+    HebbAct(),
 )
 
 #输入值

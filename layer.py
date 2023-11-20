@@ -1,28 +1,51 @@
 import numba as numba
 import numpy as np
-from numba import njit, jit
+from numba import njit, jit, prange
 
 from module import Module
 from numpy import ndarray
-import torch.nn as nn
 
 
 class LinearLayer(Module):
 
     def __init__(self, in_features: int, out_features: int) -> None:
+        """
+        Initialize the fully connected layer.
+        The size of the weight is [in_features, out_features].
+        The size of the bias is [1, out_features].
+
+        :param in_features: The input features
+        :param out_features: The output features
+        """
         self.in_features = in_features
         self.out_features = out_features
         bound = np.sqrt(6. / (self.in_features + self.out_features))
-        self.weights = np.random.uniform(-bound, bound, (self.out_features, self.in_features))
-        self.bias = np.random.rand(out_features, 1)
+        self.weights = np.random.uniform(-bound, bound, (self.in_features, self.out_features))
+        self.bias = np.random.rand(1, out_features)
         self.gradient_weights = np.zeros_like(self.weights)
         self.gradient_bias = np.zeros_like(self.bias)
+        self.inputs = None
 
-    def forward(self, input: ndarray) -> ndarray:
-        return self.weights @ input + self.bias
+    def forward(self, inputs: ndarray) -> ndarray:
+        """
+        Forward calculation of the fully connected layer.
 
-    def backward(self, input: ndarray) -> ndarray:
-        return self.weights.T @ input
+        :param inputs: [batch_size, in_features]
+        :return: [batch_size, out_features]
+        """
+        self.inputs = inputs
+        return inputs @ self.weights + self.bias
+
+    def backward(self, delta: ndarray) -> ndarray:
+        """
+        Backpropagation of the fully connected layer.
+
+        :param delta: [batch_size, out_features]
+        :return: [batch_size, in_features]
+        """
+        self.gradient_weights = self.inputs.T @ delta
+        self.gradient_bias = delta.sum(axis=0, keepdims=True)
+        return delta @ self.weights.T
 
 
 class ConvNd(Module):
@@ -47,90 +70,119 @@ class ConvNd(Module):
     def conv_mul_bp(self, input: ndarray, kernel: ndarray) -> ndarray:
         pass
 
-    def forward(self, input: ndarray) -> ndarray:
+    def forward(self, inputs: ndarray) -> ndarray:
         pass
 
-    def backward(self, input: ndarray) -> ndarray:
+    def backward(self, delta: ndarray) -> ndarray:
         pass
 
 
 class Conv2d(ConvNd):
 
     def __init__(self, in_channel: int, out_channel: int, kernel_size: int, padding: int = 0, stride: int = 1) -> None:
+        """
+        Initialize the 2d Convolutional layer.
+        The size of the weight is [kernel_size, kernel_size, in_channel, out_channel].
+        The size of the bias is [1, out_channel].
+        The size of filters is [kernel_size ** 2 * in_channel, out_channel]. (will be updated in forward)
+
+        :param in_channel: The input channel
+        :param out_channel: The output channel
+        :param kernel_size: The kernel size
+        :param padding: The padding size
+        :param stride: The stride
+        """
         super().__init__(in_channel, out_channel, kernel_size, padding, stride)
-        bound = np.sqrt(6. / (self.in_channel + self.out_channel))
-        self.weights = np.random.uniform(-bound, bound, (self.out_channel, self.in_channel, kernel_size, kernel_size))
+        bound = 0.001
+        self.weights = np.random.uniform(-bound, bound, (kernel_size, kernel_size, self.in_channel, self.out_channel))
+        # self.weights = np.random.randn(kernel_size, kernel_size, self.in_channel, self.out_channel)
         self.gradient_weights = np.zeros_like(self.weights)
         self.bias = np.random.rand(self.out_channel)
         self.gradient_bias = np.zeros_like(self.bias)
+        self.filters = None
+        self.inputs = None
 
-    def conv_mul(self, input: ndarray, kernel: ndarray, bias: int) -> ndarray:
-        output = np.zeros(((input.shape[0] - self.kernel_size) // self.stride + 1,
-                           (input.shape[1] - self.kernel_size) // self.stride + 1))
-        for i in range(output.shape[0]):
-            for j in range(output.shape[1]):
-                output[i][j] = (input[i * self.stride:i * self.stride + self.kernel_size,
-                                j * self.stride:j * self.stride + self.kernel_size] * kernel).sum() + bias
+    def forward(self, inputs: ndarray) -> ndarray:
+        """
+
+        :param inputs: [batch_size, width, height, in_channel]
+        :return: [batch_size, width, height, out_channel]
+        """
+        self.inputs = inputs
+        batch_size, height, width, channel = inputs.shape
+
+        out_height = (height + 2 * self.padding - self.kernel_size) // self.stride + 1
+        out_width = (width + 2 * self.padding - self.kernel_size) // self.stride + 1
+
+        output = np.zeros((batch_size, out_height, out_width, self.out_channel))
+
+        padded_input = np.pad(inputs, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+
+        # [kernel_size1, kernel_size2, in_channel, out_channel] to
+        # [in_channel * kernel_size2 * kernel_size1 , out_channel]
+        self.filters = self.weights.reshape(self.kernel_size ** 2 * channel, self.out_channel)
+
+        for y in range(out_height):
+            for x in range(out_width):
+                y_start, y_end, x_start, x_end = y, y + self.kernel_size, x, x + self.kernel_size
+                receptptive_area = padded_input[:, y_start:y_end, x_start:x_end, :]
+                receptptive_area = receptptive_area.reshape(batch_size, self.kernel_size ** 2 * channel)
+                # [batch_size, kernel_size1, kernel_size2, in_channel] to
+                # [batch_size, in_channel * kernel_size2 * kernel_size1]
+
+                output[:, y, x, :] = receptptive_area @ self.filters + self.bias
         return output
 
-    def conv_mul_bp(self, input: ndarray, kernel: ndarray) -> ndarray:
-        output = np.zeros(((input.shape[0] - 1) * self.stride + self.kernel_size,
-                           (input.shape[1] - 1) * self.stride + self.kernel_size))
+    def backward(self, delta: ndarray) -> ndarray:
+        """
 
-        for i in range(input.shape[0]):
-            for j in range(input.shape[1]):
-                output[i * self.stride:i * self.stride + self.kernel_size,
-                j * self.stride:j * self.stride + self.kernel_size] = kernel * input[i, j]
+        :param delta: [batch_size, width, height, out_channel]
+        :return: [batch_size, width, height, in_channel]
+        """
 
-        return output
+        batch_size, height, width, in_channel = self.inputs.shape
 
-    def gradient_cal(self, para: ndarray, delta: ndarray) -> ndarray:
-        gradient = np.zeros_like(self.gradient_weights)
-        para = np.pad(para, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+        _, out_height, out_width, out_channel = delta.shape
 
-        for para_b, delta_b in zip(para, delta):
-            for i in range(self.out_channel):
-                for j in range(self.in_channel):
-                    for k in range(delta.shape[1]):
-                        for m in range(delta.shape[2]):
-                            gradient[i, j] += para_b[j, k * self.stride:k * self.stride + self.kernel_size,
-                                              m * self.stride:m * self.stride + self.kernel_size] * delta_b[i, k, m]
+        d_result = np.zeros((batch_size, height, width, in_channel))
 
-        return gradient
+        for y in range(out_height):
+            for x in range(out_width):
+                y_start, y_end, x_start, x_end = y, y + self.kernel_size, x, x + self.kernel_size
 
-    def forward(self, input: ndarray) -> ndarray:
-        output = np.zeros(
-            (input.shape[0], self.out_channel, (input.shape[2] - self.kernel_size + 2 * self.padding) // self.stride + 1
-             , (input.shape[3] - self.kernel_size + 2 * self.padding) // self.stride + 1))
-        padded_input = np.pad(input, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+                # [batch_size, out_channel] @ [out_channel, in_channel * kernel_size2 * kernel_size1]
+                d_wrt_input = delta[:, y, x, :] @ self.filters.T
 
-        for k in range(input.shape[0]):
-            for i in range(self.out_channel):
-                for j in range(self.in_channel):
-                    output[k, i] += self.conv_mul(padded_input[k, j], self.weights[i, j], self.bias[i])
+                # [batch_size, in_channel, kernel_size2, kernel_size1]
+                d_wrt_input = d_wrt_input.reshape(batch_size, in_channel, self.kernel_size, self.kernel_size)
+                # [batch_size, kernel_size1, kernel_size2, in_channel]
+                d_wrt_input = d_wrt_input.swapaxes(1, 3)
 
-        return output
+                d_result[:, y_start:y_end, x_start:x_end, :] += d_wrt_input
+                # [batch_size, kernel_size1, kernel_size2, in_channel].T
+                # [in_channel, kernel_size2, kernel_size1, batch_size] @ [batch_size, out_channel]
+                # [in_channel, kernel_size2, kernel_size1, out_channel]
+                tmp = self.inputs[:, y_start:y_end, x_start:x_end, :].T @ delta[:, y, x, :]
 
-    def backward(self, input: ndarray) -> ndarray:
-        output = np.zeros((input.shape[0], self.in_channel, (input.shape[2] - 1) * self.stride + self.kernel_size
-                           , (input.shape[3] - 1) * self.stride + self.kernel_size))
+                tmp = tmp.swapaxes(0, 2)
+                # [kernel_size1, kernel_size2, in_channel, out_channel]
 
-        for g in range(input.shape[0]):
-            for i in range(self.in_channel):
-                for j in range(self.out_channel):
-                    output[g, i] += self.conv_mul_bp(input[g, j], self.weights[j, i])
+                self.gradient_weights += tmp
+                self.gradient_bias += np.sum(delta[:, y, x, :], axis=0)
 
-        return output[:, :, self.padding:output.shape[2] - self.padding, self.padding:output.shape[3] - self.padding]
+        return d_result
 
 
 class Flatten(Module):
 
     def __init__(self) -> None:
-        self.in_feature = np.zeros(4)
+        super().__init__()
+        self.shape = None
 
-    def forward(self, input: ndarray) -> ndarray:
-        self.in_feature = input.shape
-        return (input.flatten()).reshape(-1, self.in_feature[0])
+    def forward(self, inputs: ndarray) -> ndarray:
+        self.shape = inputs.shape
+        batch_size, height, width, channel = inputs.shape
+        return (inputs.flatten()).reshape(batch_size, height * width * channel)
 
-    def backward(self, input: ndarray) -> ndarray:
-        return input.reshape(self.in_feature)
+    def backward(self, delta: ndarray) -> ndarray:
+        return delta.reshape(self.shape)

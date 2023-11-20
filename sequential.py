@@ -8,45 +8,39 @@ from module import Module
 
 class Sequential(Module):
 
-    def __init__(self, *args: Module):
+    def __init__(self, *args: Module, loss: Loss = None):
         self._modules: List['Module'] = list()
-        self.layer_outputs = []
+        self.outputs = None
         super(Sequential, self).__init__()
         for module in args:
             self.add_module(module)
+        self.loss = loss
 
     def __iter__(self) -> Iterator[Module]:
         return iter(self._modules)
 
+    def __reversed__(self):
+        return reversed(self._modules)
+
+    def def_loss(self, loss: Loss):
+        self.loss = loss
+
     def add_module(self, module: 'Module') -> None:
         self._modules.append(module)
 
-    def get_zip(self):
-        return reversed(list(zip(self._modules, self.layer_outputs)))
+    def forward(self, inputs):
+        output = inputs
 
-    def forward(self, input):
-        output = input
-        self.layer_outputs = [output]  # 存储输入层的输出
         for module in self:
             output = module.forward(output)
-            self.layer_outputs.append(output)  # 存储每一层的输出
+        self.outputs = output
         return output
 
-    def backward(self, loss: Loss, target: ndarray):
-        delta = loss.gradient(self.layer_outputs[-1], target)
-        for module, para in self.get_zip():
-            if isinstance(module, LinearLayer):
-                module.gradient_weights = delta @ para.T
-                module.gradient_bias = delta.sum(axis=1, keepdims=True)
-                delta = module.backward(delta)
-            if isinstance(module, ConvNd):
-                module.gradient_weights = module.gradient_cal(para, delta)
-                module.gradient_bias = delta.sum(axis=(0, 2, 3))
-                delta = module.backward(delta)
-            if isinstance(module, Activation):
-                delta = module.backward(para) * delta
-            if isinstance(module, Flatten):
-                delta = module.backward(delta)
+    def backward(self, target: ndarray):
+        delta = self.loss.gradient(self.outputs, target)
+        for module in reversed(self):
+            delta = module.backward(delta)
+
 
     def hebb(self, input: ndarray, target: ndarray, learning_rate):
         for module in self._modules:

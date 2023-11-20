@@ -1,6 +1,6 @@
 import numpy as np
 
-from activation import Sigmoid, Hebb_act, MLP_act
+from activation import Sigmoid, HebbAct, MLPAct
 from layer import LinearLayer
 from loss import MeanSquaredError
 from sequential import Sequential
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 net = Sequential(
     LinearLayer(2, 2),
-    MLP_act(),
+    MLPAct(),
 )
 
 x = np.array([

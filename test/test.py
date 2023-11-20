@@ -21,6 +21,8 @@ data = Dataset(x, y)
 num_epochs = 10000
 learning_rate = 0.5
 loss = MeanSquaredError()
+net.def_loss(loss)
+
 optimizer = SGD(net, learning_rate)
 for epoch in range(num_epochs):
     total_loss = 0
@@ -28,7 +30,7 @@ for epoch in range(num_epochs):
     for inputs, target in data:
         # 使用权重更新对象进行训练
         outputs = net(inputs)
-        net.backward(loss, target)
+        net.backward(target)
         total_loss += loss.calculate(outputs,target)
         optimizer.update()
     if (epoch + 1) % 100 == 0:

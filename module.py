@@ -6,11 +6,11 @@ class Module:
     def __init__(self):
         pass
 
-    def __call__(self, *input, **kwargs):
-        return self.forward(*input)
+    def __call__(self, *inputs, **kwargs):
+        return self.forward(*inputs)
 
-    def forward(self, *input: Any):
+    def forward(self, *inputs: Any):
         raise NotImplementedError(f"Module [{type(self).__name__}] is missing the required \"forward\" function")
 
-    def backward(self, *input: Any):
+    def backward(self, *delta: Any):
         raise NotImplementedError(f"Module [{type(self).__name__}] is missing the required \"backward\" function")

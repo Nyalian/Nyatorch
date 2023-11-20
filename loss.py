@@ -2,6 +2,10 @@ import numpy as np
 
 
 class Loss:
+    """
+    Base class for all loss functions.
+    """
+
     def __init__(self):
         pass
 
@@ -14,23 +18,40 @@ class Loss:
 
 class MeanSquaredError(Loss):
     def calculate(self, prediction, target):
-        m = prediction.shape[1]
-        return 0.5 * np.sum((prediction - target) ** 2) / m
+        batch_size = prediction.shape[0]
+        return 0.5 * np.sum((prediction - target) ** 2) / batch_size
 
     def gradient(self, prediction, target):
-        return prediction - target
+        batch_size = prediction.shape[0]
+        return (prediction - target) / batch_size
+
 
 class CrossEntropy(Loss):
 
-    def _softmax(self, z):
-        return np.exp(z) / np.sum(np.exp(z), axis=0, keepdims=True)
+    @staticmethod
+    def _softmax(z):
+        return np.exp(z) / np.sum(np.exp(z), axis=1, keepdims=True)
 
     def calculate(self, prediction, target):
-        m = prediction.shape[1]
+        """
+        Calculate CrossEntropyLoss.
+
+        :param prediction: [batch_size, labels]
+        :param target: [batch_size, labels]
+        :return: The loss value (float)
+        """
+        batch_size = prediction.shape[0]
         prediction = self._softmax(prediction)
-        return -(target * np.log(prediction)).sum() / m
+        return -(target * np.log(prediction)).sum() / batch_size
 
     def gradient(self, prediction, target):
+        """
+        Calculate CrossEntropyLoss gradient.
+
+        :param prediction: [batch_size, labels]
+        :param target: [batch_size, labels]
+        :return: The gradient [batch_size, labels]
+        """
         prediction = self._softmax(prediction)
-        m = prediction.shape[1]
-        return (prediction - target) / m
+        batch_size = prediction.shape[0]
+        return (prediction - target) / batch_size

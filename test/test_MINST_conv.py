@@ -1,28 +1,26 @@
 from tqdm import tqdm
 
-from activation import Sigmoid, ReLU, Linear
+from activation import ReLU
 from dataset import MINST_loader
 from indicator import accuracy
-from layer import LinearLayer
+from layer import LinearLayer, Conv2d, Flatten
 from loss import CrossEntropy
 from optimizer import SGD
 from sequential import Sequential
 
+train, test = MINST_loader(conv=True, batch_size=128)
+
 net = Sequential(
-    LinearLayer(784, 256),
-    Sigmoid(),
-    LinearLayer(256, 100),
+    Conv2d(1, 4, 3),
     ReLU(),
-    LinearLayer(100, 64),
-    Sigmoid(),
-    LinearLayer(64, 10),
-    Linear(),
+    Conv2d(4, 8, 3),
+    ReLU(),
+    Flatten(),
+    LinearLayer(4608, 10),
 )
 
-train, test = MINST_loader()
-
-num_epochs = 2
-learning_rate = 0.003
+num_epochs = 20
+learning_rate = 0.0001
 loss = CrossEntropy()
 net.def_loss(loss)
 optimizer = SGD(net, learning_rate)
@@ -35,8 +33,9 @@ for epoch in range(num_epochs):
         outputs = net(inputs)
         net.backward(target)
         total_loss += loss.calculate(outputs, target)
+
         optimizer.update()
-    if (epoch + 1) % 5 == 0:
+    if (epoch + 1) % 1 == 0:
         print(f"Epoch {epoch + 1}, Loss: {total_loss}")
 
 test_x, test_y = test.get_all()
