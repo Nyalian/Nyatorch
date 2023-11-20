@@ -14,7 +14,8 @@ class Loss:
 
 class MeanSquaredError(Loss):
     def calculate(self, prediction, target):
-        return 0.5 * np.sum((prediction - target) ** 2)
+        m = prediction.shape[1]
+        return 0.5 * np.sum((prediction - target) ** 2) / m
 
     def gradient(self, prediction, target):
         return prediction - target
