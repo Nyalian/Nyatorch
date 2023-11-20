@@ -20,15 +20,13 @@ test_y = test_data["y"]
 
 train_x = train_x.transpose(3, 2, 0, 1)
 test_x = test_x.transpose(3, 2, 0, 1)
-print(train_y.shape)
+#print(train_y.shape)
 
 net = Sequential(
-    Conv2d(3, 10, 3),
-    Sigmoid(),
-    Conv2d(10, 20, 3),
+    Conv2d(3, 64, 3),
     ReLU(),
     Flatten(),
-    LinearLayer(15680, 10),
+    LinearLayer(57600, 10),
 )
 
 num_epochs = 20
@@ -46,7 +44,7 @@ for epoch in range(num_epochs):
         outputs = net(inputs)
         net.backward(loss, target)
         total_loss += loss.calculate(outputs, target)
-        print(inputs.shape)
+        #print(inputs.shape)
         optimizer.update()
     if (epoch + 1) % 5 == 0:
         print(f"Epoch {epoch + 1}, Loss: {total_loss}")

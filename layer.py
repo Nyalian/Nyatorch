@@ -1,3 +1,4 @@
+import numba as numba
 import numpy as np
 
 from module import Module
@@ -85,45 +86,51 @@ class Conv2d(ConvNd):
     def gradient_cal(self, para: ndarray, delta: ndarray) -> ndarray:
         gradient = np.zeros_like(self.gradient_weights)
         para = np.pad(para, ((0, 0), (self.padding, self.padding), (self.padding, self.padding)))
-        for i in range(self.out_channel):
-            for j in range(self.in_channel):
-                for k in range(delta.shape[1]):
-                    for m in range(delta.shape[2]):
-                        gradient[i, j] += para[j, k * self.stride:k * self.stride + self.kernel_size,
-                                          m * self.stride:m * self.stride + self.kernel_size] * delta[i, k, m]
+
+        for para_b, delta_b in zip(para,delta):
+            for i in range(self.out_channel):
+                for j in range(self.in_channel):
+                    for k in range(delta.shape[1]):
+                        for m in range(delta.shape[2]):
+                            gradient[i, j] += para_b[j, k * self.stride:k * self.stride + self.kernel_size,
+                                              m * self.stride:m * self.stride + self.kernel_size] * delta_b[i, k, m]
 
         return gradient
 
+    @numba.jit(nopython=True)
     def forward(self, input: ndarray) -> ndarray:
-        output = np.zeros((self.out_channel, (input.shape[1] - self.kernel_size + 2 * self.padding) // self.stride + 1
-                           , (input.shape[2] - self.kernel_size + 2 * self.padding) // self.stride + 1))
-        padded_input = np.pad(input, ((0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+        output = np.zeros(
+            (input.shape[0], self.out_channel, (input.shape[2] - self.kernel_size + 2 * self.padding) // self.stride + 1
+             , (input.shape[3] - self.kernel_size + 2 * self.padding) // self.stride + 1))
+        padded_input = np.pad(input, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
 
-        for i in range(self.out_channel):
-            for j in range(self.in_channel):
-                output[i] += self.conv_mul(padded_input[j], self.weights[i, j], self.bias[i])
+        for k in range(input.shape[0]):
+            for i in range(self.out_channel):
+                for j in range(self.in_channel):
+                    output[k, i] += self.conv_mul(padded_input[k, j], self.weights[i, j], self.bias[i])
 
         return output
 
     def backward(self, input: ndarray) -> ndarray:
-        output = np.zeros((self.in_channel, (input.shape[1] - 1) * self.stride + self.kernel_size
-                           , (input.shape[2] - 1) * self.stride + self.kernel_size))
+        output = np.zeros((input.shape[0], self.in_channel, (input.shape[2] - 1) * self.stride + self.kernel_size
+                           , (input.shape[3] - 1) * self.stride + self.kernel_size))
 
-        for i in range(self.in_channel):
-            for j in range(self.out_channel):
-                output[i] += self.conv_mul_bp(input[j], self.weights[j, i])
+        for g in range(input.shape[0]):
+            for i in range(self.in_channel):
+                for j in range(self.out_channel):
+                    output[g, i] += self.conv_mul_bp(input[g, j], self.weights[j, i])
 
-        return output[:, self.padding:output.shape[1] - self.padding, self.padding:output.shape[2] - self.padding]
+        return output[:, :, self.padding:output.shape[1] - self.padding, self.padding:output.shape[2] - self.padding]
 
 
 class Flatten(Module):
 
     def __init__(self) -> None:
-        self.in_feature = np.zeros(3)
+        self.in_feature = np.zeros(4)
 
     def forward(self, input: ndarray) -> ndarray:
         self.in_feature = input.shape
-        return (input.flatten()).reshape(-1, 1)
+        return (input.flatten()).reshape(-1, self.in_feature[0])
 
     def backward(self, input: ndarray) -> ndarray:
         return input.reshape(self.in_feature)
