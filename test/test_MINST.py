@@ -39,6 +39,9 @@ for epoch in range(num_epochs):
     if (epoch + 1) % 5 == 0:
         print(f"Epoch {epoch + 1}, Loss: {total_loss}")
 
+net.save_module()
+
+net.load_module()
 test_x, test_y = test.get_all()
 corrects = accuracy(net(test_x), test_y)
 print(corrects)

@@ -47,6 +47,12 @@ class LinearLayer(Module):
         self.gradient_bias = delta.sum(axis=0, keepdims=True)
         return delta @ self.weights.T
 
+    def get_parameter(self):
+        return {"weights": self.weights, "bias": self.bias}
+
+    def set_parameter(self, parameter: dict):
+        self.weights = parameter["weights"]
+        self.bias = parameter["bias"]
 
 class ConvNd(Module):
 
@@ -172,6 +178,12 @@ class Conv2d(ConvNd):
 
         return d_result
 
+    def get_parameter(self):
+        return {"weights": self.weights, "bias": self.bias}
+
+    def set_parameter(self, parameter: dict):
+        self.weights = parameter["weights"]
+        self.bias = parameter["bias"]
 
 class Flatten(Module):
 
