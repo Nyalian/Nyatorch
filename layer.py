@@ -4,6 +4,7 @@ from numba import njit, jit, prange
 
 from module import Module
 from numpy import ndarray
+from numba import cuda
 
 
 class LinearLayer(Module):
@@ -17,6 +18,7 @@ class LinearLayer(Module):
         :param in_features: The input features
         :param out_features: The output features
         """
+        super().__init__()
         self.in_features = in_features
         self.out_features = out_features
         bound = np.sqrt(6. / (self.in_features + self.out_features))
@@ -54,9 +56,11 @@ class LinearLayer(Module):
         self.weights = parameter["weights"]
         self.bias = parameter["bias"]
 
+
 class ConvNd(Module):
 
     def __init__(self, in_channel: int, out_channel: int, kernel_size: int, padding: int, stride: int) -> None:
+        super().__init__()
         self.in_channel = in_channel
         self.out_channel = out_channel
         self.kernel_size = kernel_size
@@ -66,15 +70,6 @@ class ConvNd(Module):
         self.bias = None
         self.gradient_weights = None
         self.gradient_bias = None
-
-    def gradient_cal(self, para: ndarray, delta: ndarray) -> ndarray:
-        pass
-
-    def conv_mul(self, input: ndarray, kernel: ndarray) -> ndarray:
-        pass
-
-    def conv_mul_bp(self, input: ndarray, kernel: ndarray) -> ndarray:
-        pass
 
     def forward(self, inputs: ndarray) -> ndarray:
         pass
@@ -111,14 +106,14 @@ class Conv2d(ConvNd):
     def forward(self, inputs: ndarray) -> ndarray:
         """
 
-        :param inputs: [batch_size, width, height, in_channel]
-        :return: [batch_size, width, height, out_channel]
+        :param inputs: [batch_size, in_width, in_height, in_channel]
+        :return: [batch_size, out_width, out_height, out_channel]
         """
         self.inputs = inputs
-        batch_size, height, width, channel = inputs.shape
+        batch_size, in_height, in_width, channel = inputs.shape
 
-        out_height = (height + 2 * self.padding - self.kernel_size) // self.stride + 1
-        out_width = (width + 2 * self.padding - self.kernel_size) // self.stride + 1
+        out_height = (in_height + 2 * self.padding - self.kernel_size) // self.stride + 1
+        out_width = (in_width + 2 * self.padding - self.kernel_size) // self.stride + 1
 
         output = np.zeros((batch_size, out_height, out_width, self.out_channel))
 
@@ -131,26 +126,26 @@ class Conv2d(ConvNd):
         for y in range(out_height):
             for x in range(out_width):
                 y_start, y_end, x_start, x_end = y, y + self.kernel_size, x, x + self.kernel_size
-                receptptive_area = padded_input[:, y_start:y_end, x_start:x_end, :]
-                receptptive_area = receptptive_area.reshape(batch_size, self.kernel_size ** 2 * channel)
+                receptive_area = padded_input[:, y_start:y_end, x_start:x_end, :]
+                receptive_area = receptive_area.reshape(batch_size, self.kernel_size ** 2 * channel)
                 # [batch_size, kernel_size1, kernel_size2, in_channel] to
                 # [batch_size, in_channel * kernel_size2 * kernel_size1]
 
-                output[:, y, x, :] = receptptive_area @ self.filters + self.bias
+                output[:, y, x, :] = receptive_area @ self.filters + self.bias
         return output
 
     def backward(self, delta: ndarray) -> ndarray:
         """
 
-        :param delta: [batch_size, width, height, out_channel]
-        :return: [batch_size, width, height, in_channel]
+        :param delta: [batch_size, out_width, out_height, out_channel]
+        :return: [batch_size, in_width, in_height, in_channel]
         """
 
-        batch_size, height, width, in_channel = self.inputs.shape
+        batch_size, in_height, in_width, in_channel = self.inputs.shape
 
         _, out_height, out_width, out_channel = delta.shape
 
-        d_result = np.zeros((batch_size, height, width, in_channel))
+        d_result = np.zeros((batch_size, in_height, in_width, in_channel))
 
         for y in range(out_height):
             for x in range(out_width):
@@ -184,6 +179,69 @@ class Conv2d(ConvNd):
     def set_parameter(self, parameter: dict):
         self.weights = parameter["weights"]
         self.bias = parameter["bias"]
+
+
+class MaxPooling(Module):
+    def __init__(self, pool_size: int, stride: int):
+        super().__init__()
+        self.pool_size = pool_size
+        self.stride = stride
+        self.inputs = None
+
+    def forward(self, inputs: ndarray) -> ndarray:
+        """
+
+        :param inputs: [batch_size, in_width, in_height, in_channel]
+        :return: [batch_size, out_width, out_height, out_channel]
+        """
+        self.inputs = inputs
+        batch_size, in_height, in_width, channel = inputs.shape
+
+        out_height = (in_height - self.pool_size) // self.stride + 1
+        out_width = (in_width - self.pool_size) // self.stride + 1
+
+        max_pool = np.zeros((batch_size, out_height, out_width, channel))
+
+        for i in range(batch_size):
+            sample = self.inputs[i]
+
+            for y in range(out_height):
+                for x in range(out_width):
+                    x_start, x_end, y_start, y_end = x, x + self.pool_size, y, y + self.pool_size
+
+                    for c in range(channel):
+                        channel_area = sample[x_start:x_end, y_start:y_end, c]
+                        max_in_channel = channel_area.max()
+                        max_pool[i, y, x, c] = max_in_channel
+
+        return max_pool
+
+    def backward(self, delta: ndarray) -> ndarray:
+        """
+
+        :param delta: [batch_size, out_width, out_height, out_channel]
+        :return: [batch_size, in_width, in_height, in_channel]
+        """
+
+        batch_size, in_height, in_width, in_channel = self.inputs.shape
+
+        _, out_height, out_width, out_channel = delta.shape
+
+        d_result = np.zeros((batch_size, in_height, in_width, in_channel))
+
+        for i in range(batch_size):
+            sample = self.inputs[i]
+
+            for y in range(out_height):
+                for x in range(out_width):
+                    x_start, x_end, y_start, y_end = x, x + self.pool_size, y, y + self.pool_size
+                    for c in range(in_channel):
+                        pool = sample[x_start:x_end, y_start:y_end, c]
+                        mask = (pool == np.max(pool))
+                        d_result[i, x_start:x_end, y_start:y_end, c] += delta[i, y, x, c] * mask
+
+        return d_result
+
 
 class Flatten(Module):
 
