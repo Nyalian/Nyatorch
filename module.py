@@ -14,3 +14,9 @@ class Module:
 
     def backward(self, *delta: Any):
         raise NotImplementedError(f"Module [{type(self).__name__}] is missing the required \"backward\" function")
+
+    def get_parameter(self):
+        return {}
+
+    def set_parameter(self, parameter: dict):
+        pass
