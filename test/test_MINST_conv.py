@@ -9,7 +9,7 @@ from optimizer import SGD
 from sequential import Sequential
 
 train, test = MINST_loader(conv=True, batch_size=128)
-
+print(train.shape)
 net = Sequential(
     Conv2d(1, 4, 3),
     ReLU(),

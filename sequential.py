@@ -54,12 +54,23 @@ class Sequential(Module):
             module.set_parameter(para)
 
     def hebb(self, input: ndarray, target: ndarray, learning_rate):
+        """
+
+        :param input: [batch_size, train_x_feature]
+        :param target: [batch, train_y_feature]
+        """
         for module in self._modules:
             if isinstance(module, LinearLayer):
-                module.weights += learning_rate * (target @ input.T)
+                module.weights += learning_rate * (input.T @ target)
 
     def mlp_func(self, input: ndarray, output: ndarray, target: ndarray):
+        """
+
+        :param input: [batch_size, train_x_feature]
+        :param output: [batch_size, out_feature]
+        :param target: [batch_size, train_y_feature]
+        """
         for module in self._modules:
             if isinstance(module, LinearLayer):
-                module.weights += (target - output) @ input.T
-                module.bias += (target - output).sum()
+                module.weights += input.T @ (target - output)
+                module.bias += (target - output).sum(axis=0, keepdims=True)

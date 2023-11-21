@@ -92,7 +92,9 @@ class Linear(Activation):
 
 
 class HebbAct(Activation):
-
+    """
+    Activation function for Hebb Learning algorithm.
+    """
     def __init__(self):
         super().__init__()
 
@@ -102,7 +104,9 @@ class HebbAct(Activation):
 
 
 class MLPAct(Activation):
-
+    """
+    Activation function for MLP.
+    """
     def __init__(self):
         super().__init__()
 
