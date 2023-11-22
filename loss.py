@@ -30,6 +30,7 @@ class CrossEntropy(Loss):
 
     @staticmethod
     def _softmax(z):
+        z -= np.max(z, axis=1, keepdims=True)
         return np.exp(z) / np.sum(np.exp(z), axis=1, keepdims=True)
 
     def calculate(self, prediction, target):
@@ -42,7 +43,7 @@ class CrossEntropy(Loss):
         """
         batch_size = prediction.shape[0]
         prediction = self._softmax(prediction)
-        return -(target * np.log(prediction)).sum() / batch_size
+        return -(target * np.log(prediction + 1e-6)).sum() / batch_size
 
     def gradient(self, prediction, target):
         """

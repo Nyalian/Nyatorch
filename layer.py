@@ -107,25 +107,25 @@ class Conv2d(ConvNd):
         :return: [batch_size, out_width, out_height, out_channel]
         """
         self.inputs = inputs
-        batch_size, in_height, in_width, channel = inputs.shape
+        batch_size, in_width, in_height, in_channel = inputs.shape
 
-        out_height = (in_height + 2 * self.padding - self.kernel_size) // self.stride + 1
         out_width = (in_width + 2 * self.padding - self.kernel_size) // self.stride + 1
+        out_height = (in_height + 2 * self.padding - self.kernel_size) // self.stride + 1
 
-        output = np.zeros((batch_size, out_height, out_width, self.out_channel))
+        output = np.zeros((batch_size, out_width, out_height, self.out_channel))
 
         padded_input = np.pad(inputs, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
 
         # [kernel_size1, kernel_size2, in_channel, out_channel] to
         # [in_channel * kernel_size2 * kernel_size1 , out_channel]
-        self.filters = self.weights.reshape(self.kernel_size ** 2 * channel, self.out_channel)
+        self.filters = self.weights.reshape(self.kernel_size ** 2 * in_channel, self.out_channel)
 
-        for y in range(out_height):
-            for x in range(out_width):
+        for y in range(out_width):
+            for x in range(out_height):
                 y_start, y_end = y * self.stride, y * self.stride + self.kernel_size
                 x_start, x_end = x * self.stride, x * self.stride + self.kernel_size
                 receptive_area = padded_input[:, y_start:y_end, x_start:x_end, :]
-                receptive_area = receptive_area.reshape(batch_size, self.kernel_size ** 2 * channel)
+                receptive_area = receptive_area.reshape(batch_size, self.kernel_size ** 2 * in_channel)
                 # [batch_size, kernel_size1, kernel_size2, in_channel] to
                 # [batch_size, in_channel * kernel_size2 * kernel_size1]
 
@@ -139,14 +139,14 @@ class Conv2d(ConvNd):
         :return: [batch_size, in_width, in_height, in_channel]
         """
 
-        batch_size, in_height, in_width, in_channel = self.inputs.shape
+        batch_size, in_width, in_height, in_channel = self.inputs.shape
 
-        _, out_height, out_width, out_channel = delta.shape
+        _, out_width, out_height, out_channel = delta.shape
 
-        d_result = np.zeros((batch_size, in_height, in_width, in_channel))
+        d_result = np.zeros((batch_size, in_width, in_height, in_channel))
 
-        for y in range(out_height):
-            for x in range(out_width):
+        for y in range(out_width):
+            for x in range(out_height):
                 y_start, y_end = y * self.stride, y * self.stride + self.kernel_size
                 x_start, x_end = x * self.stride, x * self.stride + self.kernel_size
                 # [batch_size, out_channel] @ [out_channel, in_channel * kernel_size2 * kernel_size1]
@@ -192,19 +192,19 @@ class MaxPooling(Module):
         :return: [batch_size, out_width, out_height, channel]
         """
         self.inputs = inputs
-        batch_size, in_height, in_width, channel = inputs.shape
+        batch_size, in_width, in_height, channel = inputs.shape
 
-        out_height = (in_height - self.pool_size) // self.pool_size + 1
         out_width = (in_width - self.pool_size) // self.pool_size + 1
+        out_height = (in_height - self.pool_size) // self.pool_size + 1
 
-        max_pool = np.zeros((batch_size, out_height, out_width, channel))
+        max_pool = np.zeros((batch_size, out_width, out_height, channel))
 
-        for y in range(out_height):
-            for x in range(out_width):
+        for y in range(out_width):
+            for x in range(out_height):
                 x_start, x_end = x * self.pool_size, x * self.pool_size + self.pool_size
                 y_start, y_end = y * self.pool_size, y * self.pool_size + self.pool_size
 
-            max_pool[:, y, x, :] = self.inputs[:, y_start:y_end, x_start:x_end, :].max(axis=(1, 2))
+                max_pool[:, y, x, :] = self.inputs[:, y_start:y_end, x_start:x_end, :].max(axis=(1, 2))
 
         return max_pool
 
@@ -215,14 +215,14 @@ class MaxPooling(Module):
         :return: [batch_size, in_width, in_height, channel]
         """
 
-        batch_size, in_height, in_width, channel = self.inputs.shape
+        batch_size, in_width, in_height, channel = self.inputs.shape
 
-        _, out_height, out_width, _ = delta.shape
+        _, out_width, out_height, _ = delta.shape
 
-        d_result = np.zeros((batch_size, in_height, in_width, channel))
+        d_result = np.zeros((batch_size, in_width, in_height, channel))
 
-        for y in range(out_height):
-            for x in range(out_width):
+        for y in range(out_width):
+            for x in range(out_height):
                 x_start, x_end = x * self.pool_size, x * self.pool_size + self.pool_size
                 y_start, y_end = y * self.pool_size, y * self.pool_size + self.pool_size
 
@@ -243,8 +243,8 @@ class Flatten(Module):
 
     def forward(self, inputs: ndarray) -> ndarray:
         self.shape = inputs.shape
-        batch_size, height, width, channel = inputs.shape
-        return (inputs.flatten()).reshape(batch_size, height * width * channel)
+        batch_size, width, height, channel = inputs.shape
+        return (inputs.flatten()).reshape(batch_size, width * height * channel)
 
     def backward(self, delta: ndarray) -> ndarray:
         return delta.reshape(self.shape)
