@@ -1,10 +1,7 @@
-import numba as numba
 import numpy as np
-from numba import njit, jit, prange
+from numpy import ndarray
 
 from module import Module
-from numpy import ndarray
-from numba import cuda
 
 
 class LinearLayer(Module):
@@ -97,8 +94,8 @@ class Conv2d(ConvNd):
         bound = 0.001
         self.weights = np.random.uniform(-bound, bound, (kernel_size, kernel_size, self.in_channel, self.out_channel))
         # self.weights = np.random.randn(kernel_size, kernel_size, self.in_channel, self.out_channel)
-        self.gradient_weights = np.zeros_like(self.weights)
         self.bias = np.random.rand(self.out_channel)
+        self.gradient_weights = np.zeros_like(self.weights)
         self.gradient_bias = np.zeros_like(self.bias)
         self.filters = None
         self.inputs = None
@@ -125,7 +122,8 @@ class Conv2d(ConvNd):
 
         for y in range(out_height):
             for x in range(out_width):
-                y_start, y_end, x_start, x_end = y, y + self.kernel_size, x, x + self.kernel_size
+                y_start, y_end = y * self.stride, y * self.stride + self.kernel_size
+                x_start, x_end = x * self.stride, x * self.stride + self.kernel_size
                 receptive_area = padded_input[:, y_start:y_end, x_start:x_end, :]
                 receptive_area = receptive_area.reshape(batch_size, self.kernel_size ** 2 * channel)
                 # [batch_size, kernel_size1, kernel_size2, in_channel] to
@@ -149,8 +147,8 @@ class Conv2d(ConvNd):
 
         for y in range(out_height):
             for x in range(out_width):
-                y_start, y_end, x_start, x_end = y, y + self.kernel_size, x, x + self.kernel_size
-
+                y_start, y_end = y * self.stride, y * self.stride + self.kernel_size
+                x_start, x_end = x * self.stride, x * self.stride + self.kernel_size
                 # [batch_size, out_channel] @ [out_channel, in_channel * kernel_size2 * kernel_size1]
                 d_wrt_input = delta[:, y, x, :] @ self.filters.T
 
@@ -191,8 +189,8 @@ class MaxPooling(Module):
     def forward(self, inputs: ndarray) -> ndarray:
         """
 
-        :param inputs: [batch_size, in_width, in_height, in_channel]
-        :return: [batch_size, out_width, out_height, out_channel]
+        :param inputs: [batch_size, in_width, in_height, channel]
+        :return: [batch_size, out_width, out_height, channel]
         """
         self.inputs = inputs
         batch_size, in_height, in_width, channel = inputs.shape
@@ -207,10 +205,11 @@ class MaxPooling(Module):
 
             for y in range(out_height):
                 for x in range(out_width):
-                    x_start, x_end, y_start, y_end = x, x + self.pool_size, y, y + self.pool_size
+                    x_start, x_end = x * self.stride, x * self.stride + self.pool_size
+                    y_start, y_end = y * self.stride, y * self.stride + self.pool_size
 
                     for c in range(channel):
-                        channel_area = sample[x_start:x_end, y_start:y_end, c]
+                        channel_area = sample[y_start:y_end, x_start:x_end, c]
                         max_in_channel = channel_area.max()
                         max_pool[i, y, x, c] = max_in_channel
 
@@ -219,26 +218,27 @@ class MaxPooling(Module):
     def backward(self, delta: ndarray) -> ndarray:
         """
 
-        :param delta: [batch_size, out_width, out_height, out_channel]
-        :return: [batch_size, in_width, in_height, in_channel]
+        :param delta: [batch_size, out_width, out_height, channel]
+        :return: [batch_size, in_width, in_height, channel]
         """
 
-        batch_size, in_height, in_width, in_channel = self.inputs.shape
+        batch_size, in_height, in_width, channel = self.inputs.shape
 
-        _, out_height, out_width, out_channel = delta.shape
+        _, out_height, out_width, _ = delta.shape
 
-        d_result = np.zeros((batch_size, in_height, in_width, in_channel))
+        d_result = np.zeros((batch_size, in_height, in_width, channel))
 
         for i in range(batch_size):
             sample = self.inputs[i]
 
             for y in range(out_height):
                 for x in range(out_width):
-                    x_start, x_end, y_start, y_end = x, x + self.pool_size, y, y + self.pool_size
-                    for c in range(in_channel):
-                        pool = sample[x_start:x_end, y_start:y_end, c]
+                    x_start, x_end = x * self.stride, x * self.stride + self.pool_size
+                    y_start, y_end = y * self.stride, y * self.stride + self.pool_size
+                    for c in range(channel):
+                        pool = sample[y_start:y_end, x_start:x_end, c]
                         mask = (pool == np.max(pool))
-                        d_result[i, x_start:x_end, y_start:y_end, c] += delta[i, y, x, c] * mask
+                        d_result[i, y_start:y_end, x_start:x_end, c] += delta[i, y, x, c] * mask
 
         return d_result
 
