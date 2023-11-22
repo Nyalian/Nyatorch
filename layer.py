@@ -91,7 +91,7 @@ class Conv2d(ConvNd):
         :param stride: The stride
         """
         super().__init__(in_channel, out_channel, kernel_size, padding, stride)
-        bound = 0.001
+        bound = 0.0001
         self.weights = np.random.uniform(-bound, bound, (kernel_size, kernel_size, self.in_channel, self.out_channel))
         # self.weights = np.random.randn(kernel_size, kernel_size, self.in_channel, self.out_channel)
         self.bias = np.random.rand(self.out_channel)
@@ -180,10 +180,9 @@ class Conv2d(ConvNd):
 
 
 class MaxPooling(Module):
-    def __init__(self, pool_size: int, stride: int):
+    def __init__(self, pool_size: int):
         super().__init__()
         self.pool_size = pool_size
-        self.stride = stride
         self.inputs = None
 
     def forward(self, inputs: ndarray) -> ndarray:
@@ -195,23 +194,17 @@ class MaxPooling(Module):
         self.inputs = inputs
         batch_size, in_height, in_width, channel = inputs.shape
 
-        out_height = (in_height - self.pool_size) // self.stride + 1
-        out_width = (in_width - self.pool_size) // self.stride + 1
+        out_height = (in_height - self.pool_size) // self.pool_size + 1
+        out_width = (in_width - self.pool_size) // self.pool_size + 1
 
         max_pool = np.zeros((batch_size, out_height, out_width, channel))
 
-        for i in range(batch_size):
-            sample = self.inputs[i]
+        for y in range(out_height):
+            for x in range(out_width):
+                x_start, x_end = x * self.pool_size, x * self.pool_size + self.pool_size
+                y_start, y_end = y * self.pool_size, y * self.pool_size + self.pool_size
 
-            for y in range(out_height):
-                for x in range(out_width):
-                    x_start, x_end = x * self.stride, x * self.stride + self.pool_size
-                    y_start, y_end = y * self.stride, y * self.stride + self.pool_size
-
-                    for c in range(channel):
-                        channel_area = sample[y_start:y_end, x_start:x_end, c]
-                        max_in_channel = channel_area.max()
-                        max_pool[i, y, x, c] = max_in_channel
+            max_pool[:, y, x, :] = self.inputs[:, y_start:y_end, x_start:x_end, :].max(axis=(1, 2))
 
         return max_pool
 
@@ -228,17 +221,16 @@ class MaxPooling(Module):
 
         d_result = np.zeros((batch_size, in_height, in_width, channel))
 
-        for i in range(batch_size):
-            sample = self.inputs[i]
+        for y in range(out_height):
+            for x in range(out_width):
+                x_start, x_end = x * self.pool_size, x * self.pool_size + self.pool_size
+                y_start, y_end = y * self.pool_size, y * self.pool_size + self.pool_size
 
-            for y in range(out_height):
-                for x in range(out_width):
-                    x_start, x_end = x * self.stride, x * self.stride + self.pool_size
-                    y_start, y_end = y * self.stride, y * self.stride + self.pool_size
-                    for c in range(channel):
-                        pool = sample[y_start:y_end, x_start:x_end, c]
-                        mask = (pool == np.max(pool))
-                        d_result[i, y_start:y_end, x_start:x_end, c] += delta[i, y, x, c] * mask
+                pool = self.inputs[:, y_start:y_end, x_start:x_end, :]
+                mask = (pool == np.max(pool, axis=(1, 2), keepdims=True))
+
+                d_result[:, y_start:y_end, x_start:x_end, :] += delta[:, y, x, :].reshape(self.inputs.shape[0], 1, -1,
+                                                                                          self.inputs.shape[-1]) * mask
 
         return d_result
 
