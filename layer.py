@@ -53,6 +53,10 @@ class LinearLayer(Module):
         self.weights = parameter["weights"]
         self.bias = parameter["bias"]
 
+    def update(self, learning_rate):
+        self.weights -= learning_rate * self.gradient_weights
+        self.bias -= learning_rate * self.gradient_bias
+
 
 class ConvNd(Module):
 
@@ -91,10 +95,10 @@ class Conv2d(ConvNd):
         :param stride: The stride
         """
         super().__init__(in_channel, out_channel, kernel_size, padding, stride)
-        bound = 0.0001
+        bound = np.sqrt(6. / (in_channel * kernel_size ** 2 + out_channel * kernel_size ** 2))
         self.weights = np.random.uniform(-bound, bound, (kernel_size, kernel_size, self.in_channel, self.out_channel))
         # self.weights = np.random.randn(kernel_size, kernel_size, self.in_channel, self.out_channel)
-        self.bias = np.random.rand(self.out_channel)
+        self.bias = np.random.rand(1, self.out_channel)
         self.gradient_weights = np.zeros_like(self.weights)
         self.gradient_bias = np.zeros_like(self.bias)
         self.filters = None
@@ -177,6 +181,10 @@ class Conv2d(ConvNd):
     def set_parameter(self, parameter: dict):
         self.weights = parameter["weights"]
         self.bias = parameter["bias"]
+
+    def update(self, learning_rate):
+        self.weights -= learning_rate * self.gradient_weights
+        self.bias -= learning_rate * self.gradient_bias
 
 
 class MaxPooling(Module):

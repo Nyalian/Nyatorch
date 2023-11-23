@@ -20,3 +20,6 @@ class Module:
 
     def set_parameter(self, parameter: dict):
         pass
+
+    def update(self, _):
+        pass

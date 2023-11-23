@@ -54,6 +54,10 @@ class LinearLayer(Module):
         self.weights = parameter["weights"]
         self.bias = parameter["bias"]
 
+    def update(self, learning_rate):
+        self.weights -= learning_rate * self.gradient_weights
+        self.bias -= learning_rate * self.gradient_bias
+
 
 class ConvNd(Module):
 
@@ -75,6 +79,10 @@ class ConvNd(Module):
     def backward(self, delta: ndarray) -> ndarray:
         pass
 
+    def update(self, learning_rate):
+        self.weights -= learning_rate * self.gradient_weights
+        self.bias -= learning_rate * self.gradient_bias
+
 
 class Conv2d(ConvNd):
 
@@ -91,10 +99,10 @@ class Conv2d(ConvNd):
         :param stride: The stride
         """
         super().__init__(in_channel, out_channel, kernel_size, padding, stride)
-        # bound = 0.0001
-        # self.weights = np.random.uniform(-bound, bound, (kernel_size, kernel_size, self.in_channel, self.out_channel))
-        self.weights = np.random.randn(kernel_size, kernel_size, self.in_channel, self.out_channel)
-        self.bias = np.random.rand(self.out_channel)
+        bound = np.sqrt(6. / (in_channel * kernel_size ** 2 + out_channel * kernel_size ** 2))
+        self.weights = np.random.uniform(-bound, bound, (kernel_size, kernel_size, self.in_channel, self.out_channel))
+        # self.weights = np.random.randn(kernel_size, kernel_size, self.in_channel, self.out_channel)
+        self.bias = np.random.rand(1, self.out_channel)
         self.gradient_weights = np.zeros_like(self.weights)
         self.gradient_bias = np.zeros_like(self.bias)
         self.filters = None
@@ -116,7 +124,7 @@ class Conv2d(ConvNd):
 
         padded_input = np.pad(inputs, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
 
-        self.inputs = padded_input
+        self.inputs = inputs
 
         d_input = cuda.to_device(padded_input)
         d_kernel = cuda.to_device(self.weights)
@@ -157,7 +165,7 @@ class Conv2d(ConvNd):
         d_weight = cuda.to_device(self.weights)
         d_gradient_weights = cuda.to_device(gradient_weights)
 
-        block_dim1 = (out_width, out_height)
+        block_dim1 = (in_width, in_height)
         grid_dim1 = (batch_size, in_channel)
         block_dim2 = (self.kernel_size, self.kernel_size)
         grid_dim2 = (in_channel, out_channel)
@@ -185,6 +193,10 @@ class Conv2d(ConvNd):
     def set_parameter(self, parameter: dict):
         self.weights = parameter["weights"]
         self.bias = parameter["bias"]
+
+    def update(self, learning_rate):
+        self.weights -= learning_rate * self.gradient_weights
+        self.bias -= learning_rate * self.gradient_bias
 
 
 class MaxPooling(Module):
@@ -270,58 +282,67 @@ class Flatten(Module):
 
 @cuda.jit
 def convolution_gpu(inputs, weights, outputs):
-    """
-    2D Convolution operation on GPU using Numba.
-
-    Parameters:
-    - input_array: 4D input array (batch, height, width, channel)
-    - kernel: 4D convolution kernel (kernel_height, kernel_width, input_channels, output_channel)
-    - output_array: 4D output array after convolution
-    """
     i, j = cuda.threadIdx.x, cuda.threadIdx.y
     b, out_c = cuda.blockIdx.x, cuda.blockIdx.y
 
-    if i < outputs.shape[1] and j < outputs.shape[2] and out_c < outputs.shape[3] and b < \
-            inputs.shape[0]:
-        kw, kh, _, _ = weights.shape
+    kw, kh, _, _ = weights.shape
 
-        value = 0.0
-        for x in range(kh):
-            for y in range(kw):
-                for in_c in range(inputs.shape[3]):
-                    value += weights[x, y, in_c, out_c] * inputs[b, i + x, j + y, in_c]
+    value = 0.0
+    for x in range(kh):
+        for y in range(kw):
+            for in_c in range(inputs.shape[3]):
+                value += weights[x, y, in_c, out_c] * inputs[b, i + x, j + y, in_c]
 
         outputs[b, i, j, out_c] = value
 
 
 @cuda.jit
 def convolution_backward_gpu(delta_output, weight, delta_input):
-    i, j = cuda.threadIdx.x, cuda.threadIdx.y
-    b, c = cuda.blockIdx.x, cuda.blockIdx.y
+    """
+    :param delta_output: [batch_size, out_width, out_height, out_channel]
+    :param weight: [kernel_size, kernel_size, in_channel, out_channel]
+    :param delta_input: [batch_size, in_width, in_height, in_channel]
+    """
+    in_w, in_h = cuda.threadIdx.x, cuda.threadIdx.y
+    b_size, in_c = cuda.blockIdx.x, cuda.blockIdx.y
 
-    kernel_size, _, in_c, out_c = weight.shape
+    kernel_size, _, _, out_c = weight.shape
+    _, out_w, out_h, _ = delta_output.shape
+
     value = 0.0
-    for k in range(max(kernel_size, i + 1)):
-        for l in range(max(kernel_size, j + 1)):
-            for m in range(out_c):
-                value += delta_output[b, i - k, j - l, m] * weight[k, l, c, m]
+    for m in range(out_c):
+        for k in range(kernel_size):
+            for l in range(kernel_size):
+                if 0 <= in_w - k < out_w and 0 <= in_h - l < out_h:
+                    value += delta_output[b_size, in_w - k, in_h - l, m] * weight[k, l, in_c, m]
 
-    delta_input[b, i, j, c] = value
+    delta_input[b_size, in_w, in_h, in_c] = value
 
 
 @cuda.jit
 def convolution_kernel_gpu(delta_output, input, gradient_weights):
-    k, l = cuda.threadIdx.x, cuda.threadIdx.y
-    c, m = cuda.blockIdx.x, cuda.blockIdx.y
+    """
+    in_width > out_width
+    k, l ~ [0, kernel_size)
+    if stride = 1, padding = 1
+    in_width - kernel_size + 1 = out_width
+    kernel_size - 1 + out_width - 1 = in_width - 1
+    i + k ~ [0, in_width)
+    :param delta_output: [batch_size, out_width, out_height, out_channel]
+    :param input: [batch_size, in_width, in_height, in_channel]
+    :param gradient_weights: [kernel_size, kernel_size, in_channel, out_channel]
+    """
+    kernel_w, kernel_h = cuda.threadIdx.x, cuda.threadIdx.y
+    in_c, out_c = cuda.blockIdx.x, cuda.blockIdx.y
 
-    batch_size, in_width, in_height, in_channel = input.shape
+    batch_size, out_width, out_height, _ = delta_output.shape
     value = 0.0
     for b in range(batch_size):
-        for i in range(max(in_width, in_width - k)):
-            for j in range(max(in_height, in_height - l)):
-                value += delta_output[b, i + k, j + l, m] * input[b, i, j, c]
+        for i in range(out_width):
+            for j in range(out_height):
+                value += delta_output[b, i, j, out_c] * input[b, i + kernel_w, j + kernel_h, in_c]
 
-    gradient_weights[k, l, c, m] = value
+    gradient_weights[kernel_w, kernel_h, in_c, out_c] = value
 
 
 @cuda.jit
@@ -356,8 +377,8 @@ def maxpooling_backward_gpu(delta_output, inputs, delta_input, pool_size):
     i, j = cuda.threadIdx.x, cuda.threadIdx.y
     b, c = cuda.blockIdx.x, cuda.blockIdx.y
 
-    if i < delta_output.shape[1] and j < delta_output.shape[2] and c < delta_output.shape[3] and b < delta_output.shape[
-        0]:
+    if i < delta_output.shape[1] and j < delta_output.shape[2] and c < delta_output.shape[3] \
+            and b < delta_output.shape[0]:
 
         input_height, input_width = inputs.shape[1], inputs.shape[2]
 

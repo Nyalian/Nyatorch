@@ -1,21 +1,13 @@
-from layer import LinearLayer, ConvNd
-
-
 class Optimizer:
     def __init__(self, net, learning_rate) -> None:
         self.net = net
         self.learning_rate = learning_rate
 
-    def update(self, gradients) -> None:
+    def update(self) -> None:
         pass
 
 
 class SGD(Optimizer):
     def update(self) -> None:
         for module in self.net:
-            if isinstance(module, LinearLayer):
-                module.weights -= self.learning_rate * module.gradient_weights
-                module.bias -= self.learning_rate * module.gradient_bias
-            if isinstance(module, ConvNd):
-                module.weights -= self.learning_rate * module.gradient_weights
-                module.bias -= self.learning_rate * module.gradient_bias
+            module.update(self.learning_rate)
