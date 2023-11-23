@@ -77,12 +77,12 @@ def MINST_loader(conv=False, batch_size=32):
         train_labels = np.frombuffer(path1.read(), np.uint8, offset=8)
     with gzip.open(path[1], 'rb') as path2:
         train_images = np.frombuffer(path2.read(), np.uint8, offset=16).reshape((len(train_labels),) + shape).astype(
-            np.float32)
+            np.float64)
     with gzip.open(path[2], 'rb') as path3:
         test_labels = np.frombuffer(path3.read(), np.uint8, offset=8)
     with gzip.open(path[3], 'rb') as path4:
         test_images = np.frombuffer(path4.read(), np.uint8, offset=16).reshape((len(test_labels),) + shape).astype(
-            np.float32)
+            np.float64)
     if conv:
         train_images = np.expand_dims(train_images, axis=-1)
         test_images = np.expand_dims(test_images, axis=-1)
@@ -93,7 +93,7 @@ def MINST_loader(conv=False, batch_size=32):
             one_hot[i, labels[i]] = 1
         return one_hot
 
-    train_one_hot = get_one_hot(train_labels).astype(np.float32)
-    test_one_hot = get_one_hot(test_labels).astype(np.float32)
+    train_one_hot = get_one_hot(train_labels).astype(np.float64)
+    test_one_hot = get_one_hot(test_labels).astype(np.float64)
 
     return Dataset(train_images, train_one_hot, batch_size=batch_size), Dataset(test_images, test_one_hot)

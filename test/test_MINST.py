@@ -34,7 +34,7 @@ for epoch in range(num_epochs):
         # 使用权重更新对象进行训练
         outputs = net(inputs)
         net.backward(target)
-        total_loss += loss.calculate(outputs, target)
+        total_loss += loss.calculate(outputs, target) / len(train)
         optimizer.update()
     if (epoch + 1) % 5 == 0:
         print(f"Epoch {epoch + 1}, Loss: {total_loss}")

@@ -79,10 +79,6 @@ class ConvNd(Module):
     def backward(self, delta: ndarray) -> ndarray:
         pass
 
-    def update(self, learning_rate):
-        self.weights -= learning_rate * self.gradient_weights
-        self.bias -= learning_rate * self.gradient_bias
-
 
 class Conv2d(ConvNd):
 
@@ -99,9 +95,8 @@ class Conv2d(ConvNd):
         :param stride: The stride
         """
         super().__init__(in_channel, out_channel, kernel_size, padding, stride)
-        bound = np.sqrt(6. / (in_channel * kernel_size ** 2 + out_channel * kernel_size ** 2))
+        bound = np.sqrt(2. / (in_channel * kernel_size ** 2 + out_channel * kernel_size ** 2))
         self.weights = np.random.uniform(-bound, bound, (kernel_size, kernel_size, self.in_channel, self.out_channel))
-        # self.weights = np.random.randn(kernel_size, kernel_size, self.in_channel, self.out_channel)
         self.bias = np.random.rand(1, self.out_channel)
         self.gradient_weights = np.zeros_like(self.weights)
         self.gradient_bias = np.zeros_like(self.bias)
@@ -156,8 +151,8 @@ class Conv2d(ConvNd):
 
         _, out_width, out_height, out_channel = delta_output.shape
 
-        delta_input = np.zeros((batch_size, in_width, in_height, in_channel), dtype=np.float32)
-        gradient_weights = np.zeros_like(self.gradient_weights, dtype=np.float32)
+        delta_input = np.zeros((batch_size, in_width, in_height, in_channel), dtype=np.float64)
+        gradient_weights = np.zeros_like(self.gradient_weights, dtype=np.float64)
 
         d_delta_output = cuda.to_device(delta_output)
         d_input = cuda.to_device(self.inputs)
@@ -217,7 +212,7 @@ class MaxPooling(Module):
         out_height = (in_height - self.pool_size) // self.pool_size + 1
         out_width = (in_width - self.pool_size) // self.pool_size + 1
 
-        output = np.zeros((batch_size, out_height, out_width, channel), dtype=np.float32)
+        output = np.zeros((batch_size, out_height, out_width, channel), dtype=np.float64)
 
         d_input = cuda.to_device(inputs)
         d_output = cuda.to_device(output)
@@ -245,7 +240,7 @@ class MaxPooling(Module):
 
         _, out_height, out_width, _ = delta_output.shape
 
-        delta_input = np.zeros((batch_size, in_height, in_width, channel), dtype=np.float32)
+        delta_input = np.zeros((batch_size, in_height, in_width, channel), dtype=np.float64)
 
         d_delta_output = cuda.to_device(delta_output)
         d_input = cuda.to_device(self.inputs)
