@@ -2,7 +2,7 @@ import gzip
 import numpy as np
 
 from typing import Optional
-from ..data import DataLoader
+from .loader import DataLoader
 
 
 def MINST_loader(conv: Optional[bool] = False, batch_size: Optional[int] = 32) -> tuple[DataLoader, DataLoader]:
