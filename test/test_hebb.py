@@ -1,12 +1,10 @@
 import numpy as np
 
-from activation import Sigmoid, HebbAct
-from layer import LinearLayer
-from loss import MeanSquaredError
-from sequential import Sequential
-from dataset import Dataset
-from optimizer import SGD
+from Nyatorch import nn
 import matplotlib.pyplot as plt
+
+from Nyatorch.utils.data import DataLoader
+
 
 def show(x):
     y = [1 if i > 0 else 0 for i in x]
@@ -21,57 +19,58 @@ def show(x):
     # 显示图形
     plt.show()
 
-net = Sequential(
-    LinearLayer(30,30),
-    HebbAct(),
+
+net = nn.Sequential(
+    nn.LinearLayer(30, 30),
+    nn.HebbAct(),
 )
 
-#输入值
-x=np.array([[-1,1,1,1,-1,
-    1,-1,-1,-1,1,
-    1,-1,-1,-1,1,
-    1,-1,-1,-1,1,
-    1,-1,-1,-1,1,
-    -1,1,1,1,-1],
-    [-1,1,1,-1,-1,
-    -1,-1,1,-1,-1,
-    -1,-1,1,-1,-1,
-    -1,-1,1,-1,-1,
-    -1,-1,1,-1,-1,
-    -1,-1,1,-1,-1,],
-    [1,1,1,-1,-1,
-    -1,-1,-1,1,-1,
-    -1,-1,-1,1,-1,
-    -1,1,1,-1,-1,
-    -1,1,-1,-1,-1,
-    -1,1,1,1,1]])
+# 输入值
+x = np.array([[-1, 1, 1, 1, -1,
+               1, -1, -1, -1, 1,
+               1, -1, -1, -1, 1,
+               1, -1, -1, -1, 1,
+               1, -1, -1, -1, 1,
+               -1, 1, 1, 1, -1],
+              [-1, 1, 1, -1, -1,
+               -1, -1, 1, -1, -1,
+               -1, -1, 1, -1, -1,
+               -1, -1, 1, -1, -1,
+               -1, -1, 1, -1, -1,
+               -1, -1, 1, -1, -1, ],
+              [1, 1, 1, -1, -1,
+               -1, -1, -1, 1, -1,
+               -1, -1, -1, 1, -1,
+               -1, 1, 1, -1, -1,
+               -1, 1, -1, -1, -1,
+               -1, 1, 1, 1, 1]]).reshape(3, 30)
 
-#输出值
-t=np.array([[-1,1,1,1,-1,
-    1,-1,-1,-1,1,
-    1,-1,-1,-1,1,
-    1,-1,-1,-1,1,
-    1,-1,-1,-1,1,
-    -1,1,1,1,-1],
-    [-1,1,1,-1,-1,
-    -1,-1,1,-1,-1,
-    -1,-1,1,-1,-1,
-    -1,-1,1,-1,-1,
-    -1,-1,1,-1,-1,
-    -1,-1,1,-1,-1,],
-    [1,1,1,-1,-1,
-    -1,-1,-1,1,-1,
-    -1,-1,-1,1,-1,
-    -1,1,1,-1,-1,
-    -1,1,-1,-1,-1,
-    -1,1,1,1,1]])
+# 输出值
+t = np.array([[-1, 1, 1, 1, -1,
+               1, -1, -1, -1, 1,
+               1, -1, -1, -1, 1,
+               1, -1, -1, -1, 1,
+               1, -1, -1, -1, 1,
+               -1, 1, 1, 1, -1],
+              [-1, 1, 1, -1, -1,
+               -1, -1, 1, -1, -1,
+               -1, -1, 1, -1, -1,
+               -1, -1, 1, -1, -1,
+               -1, -1, 1, -1, -1,
+               -1, -1, 1, -1, -1, ],
+              [1, 1, 1, -1, -1,
+               -1, -1, -1, 1, -1,
+               -1, -1, -1, 1, -1,
+               -1, 1, 1, -1, -1,
+               -1, 1, -1, -1, -1,
+               -1, 1, 1, 1, 1]]).reshape(3, 30)
 
-num_epoch=1
-learning_rate=0.5
+train = DataLoader(x, t)
+num_epoch = 1
+learning_rate = 0.5
 for i in range(num_epoch):
-    for input,target in zip(x,t):
-        net.hebb(input.reshape(-1,1),target.reshape(-1,1),learning_rate)
+    for input, target in train:
+        net.hebb(input, target, learning_rate)
 
-for a in x:
-    a=a.reshape(-1,1)
-    show(net(a))
+for input, target in train:
+    show(net(input))

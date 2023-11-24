@@ -1,22 +1,18 @@
 from tqdm import tqdm
 
-from activation import Sigmoid, ReLU, Linear
-from dataset import MINST_loader
-from indicator import accuracy
-from layer import LinearLayer
-from loss import CrossEntropy
-from optimizer import SGD
-from sequential import Sequential
+from Nyatorch import nn
+from Nyatorch.utils import CrossEntropy, SGD, accuracy
+from Nyatorch.utils.data import MINST_loader
 
-net = Sequential(
-    LinearLayer(784, 256),
-    Sigmoid(),
-    LinearLayer(256, 100),
-    ReLU(),
-    LinearLayer(100, 64),
-    Sigmoid(),
-    LinearLayer(64, 10),
-    Linear(),
+net = nn.Sequential(
+    nn.LinearLayer(784, 256),
+    nn.Sigmoid(),
+    nn.LinearLayer(256, 100),
+    nn.ReLU(),
+    nn.LinearLayer(100, 64),
+    nn.Sigmoid(),
+    nn.LinearLayer(64, 10),
+    nn.Linear(),
 )
 
 train, test = MINST_loader()

@@ -1,16 +1,11 @@
 import numpy as np
 
-from activation import Sigmoid, HebbAct, MLPAct
-from layer import LinearLayer
-from loss import MeanSquaredError
-from sequential import Sequential
-from dataset import Dataset
-from optimizer import SGD
-import matplotlib.pyplot as plt
+from Nyatorch import nn
+from Nyatorch.utils.data import DataLoader
 
-net = Sequential(
-    LinearLayer(2, 2),
-    MLPAct(),
+net = nn.Sequential(
+    nn.LinearLayer(2, 2),
+    nn.MLPAct(),
 )
 
 x = np.array([
@@ -20,15 +15,19 @@ x = np.array([
 ])
 
 y = np.array([
-    [1,0],
-    [0,1],
-    [0,1]
+    [1, 0],
+    [0, 1],
+    [0, 1]
 ])
 
 num_epoch = 20
 
-for i in range(num_epoch):
-    a = net(x.T)
-    net.mlp_func(x.T, a, y.T)
+train = DataLoader(x, y)
 
-print(net(x.T).T)
+for i in range(num_epoch):
+    for x, y in train:
+        a = net(x)
+        net.mlp_func(x, a, y)
+
+for x, y in train:
+    print(net(x))

@@ -1,34 +1,7 @@
 import numpy as np
-from module import Module
 from numpy import ndarray
 
-
-class Activation(Module):
-    """
-    Base class for activation function layers.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.inputs = None
-
-    def forward(self, inputs: ndarray):
-        self.inputs = inputs
-
-    def backward(self, delta: ndarray):
-        """
-        Backpropagation of the activation layer.
-
-        :param delta: [batch_size, out_feature] or [batch_size, width, height, channel]
-        :return: [batch_size, out_feature] or [batch_size, width, height, channel]
-        """
-        return self._gradient() * delta
-
-    def _gradient(self):
-        """
-        Gradient of the activation layer. Need to be overridden.
-        """
-        raise NotImplementedError(f"Module [{type(self).__name__}] is missing the required \"_gradient\" function")
+from .abstract import Activation
 
 
 class ReLU(Activation):
@@ -36,7 +9,7 @@ class ReLU(Activation):
     ReLU activation function layer.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: ndarray) -> ndarray:
@@ -52,7 +25,7 @@ class Sigmoid(Activation):
     Sigmoid activation function layer.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: ndarray) -> ndarray:
@@ -64,7 +37,7 @@ class Sigmoid(Activation):
 
 
 class Tanh(Activation):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: ndarray) -> ndarray:
@@ -80,7 +53,7 @@ class Linear(Activation):
     Linear activation function layer.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: ndarray) -> ndarray:
@@ -95,21 +68,29 @@ class HebbAct(Activation):
     """
     Activation function for Hebb Learning algorithm.
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: ndarray) -> ndarray:
         super().forward(inputs)
-        return np.array([1 if x >= 0 else -1 for x in inputs])
+        return np.array([1 if x >= 0 else -1 for x in inputs[0]]).reshape(-1,1)
+
+    def _gradient(self):
+        pass
 
 
 class MLPAct(Activation):
     """
     Activation function for MLP.
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: ndarray) -> ndarray:
         super().forward(inputs)
         return inputs >= 0
+
+    def _gradient(self):
+        pass

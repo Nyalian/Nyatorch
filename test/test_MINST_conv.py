@@ -1,25 +1,20 @@
-import numpy as np
 from tqdm import tqdm
 
-from activation import ReLU, Sigmoid
-from dataset import MINST_loader
-from indicator import accuracy
-from layer_cuda import LinearLayer, Conv2d, Flatten, MaxPooling
-from loss import CrossEntropy
-from optimizer import SGD
-from sequential import Sequential
+from Nyatorch import nn
+from Nyatorch.utils import CrossEntropy, SGD, accuracy
+from Nyatorch.utils.data import MINST_loader
 
 train, test = MINST_loader(conv=True, batch_size=64)
-net = Sequential(
-    Conv2d(1, 4, 3),
-    ReLU(),
-    Conv2d(4, 8, 3),
-    ReLU(),
-    MaxPooling(2),
-    Flatten(),
-    LinearLayer(1152, 512),
-    Sigmoid(),
-    LinearLayer(512, 10),
+net = nn.Sequential(
+    nn.Conv2dGPU(1, 4, 3),
+    nn.ReLU(),
+    nn.Conv2dGPU(4, 8, 3),
+    nn.ReLU(),
+    nn.MaxPoolingGPU(2),
+    nn.Flatten(),
+    nn.LinearLayer(1152, 512),
+    nn.Sigmoid(),
+    nn.LinearLayer(512, 10),
 )
 
 num_epochs = 10
