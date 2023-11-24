@@ -1,15 +1,16 @@
+from typing import Iterator, List, Optional
+
 import numpy as np
 from numpy import ndarray
-from typing import Iterator, List
-from activation import Activation
-from layer import LinearLayer, ConvNd, Flatten
-from loss import Loss
-from module import Module
+
+from .abstract import Module
+from .linear import LinearLayer
+from Nyatorch.utils.loss import Loss
 
 
 class Sequential(Module):
 
-    def __init__(self, *args: Module, loss: Loss = None):
+    def __init__(self, *args: Module, loss: Optional[Loss] = None) -> None:
         super().__init__()
         self._modules: List['Module'] = list()
         self.outputs = None
@@ -56,12 +57,13 @@ class Sequential(Module):
     def hebb(self, input: ndarray, target: ndarray, learning_rate):
         """
 
+        :param learning_rate:
         :param input: [batch_size, train_x_feature]
         :param target: [batch, train_y_feature]
         """
         for module in self._modules:
             if isinstance(module, LinearLayer):
-                module.weights += learning_rate * (input.T @ target)
+                module.weights += learning_rate * (input @ target.T)
 
     def mlp_func(self, input: ndarray, output: ndarray, target: ndarray):
         """

@@ -1,16 +1,11 @@
 import numpy as np
 
-from activation import Sigmoid, HebbAct, MLPAct
-from layer import LinearLayer
-from loss import MeanSquaredError
-from sequential import Sequential
-from dataset import Dataset
-from optimizer import SGD
-import matplotlib.pyplot as plt
+from Nyatorch import nn
 
-net = Sequential(
-    LinearLayer(2, 2),
-    MLPAct(),
+
+net = nn.Sequential(
+    nn.LinearLayer(2, 2),
+    nn.MLPAct(),
 )
 
 x = np.array([

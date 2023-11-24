@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import ndarray
 
 
 class Loss:
@@ -17,11 +18,11 @@ class Loss:
 
 
 class MeanSquaredError(Loss):
-    def calculate(self, prediction, target):
+    def calculate(self, prediction, target) -> float:
         batch_size = prediction.shape[0]
         return 0.5 * np.sum((prediction - target) ** 2) / batch_size
 
-    def gradient(self, prediction, target):
+    def gradient(self, prediction, target) -> ndarray:
         batch_size = prediction.shape[0]
         return (prediction - target) / batch_size
 
@@ -29,11 +30,11 @@ class MeanSquaredError(Loss):
 class CrossEntropy(Loss):
 
     @staticmethod
-    def _softmax(z):
+    def _softmax(z) -> ndarray:
         z -= np.max(z, axis=1, keepdims=True)
         return np.exp(z) / np.sum(np.exp(z), axis=1, keepdims=True)
 
-    def calculate(self, prediction, target):
+    def calculate(self, prediction, target) -> float:
         """
         Calculate CrossEntropyLoss.
 
@@ -45,7 +46,7 @@ class CrossEntropy(Loss):
         prediction = self._softmax(prediction)
         return -(target * np.log(prediction + 1e-6)).sum() / batch_size
 
-    def gradient(self, prediction, target):
+    def gradient(self, prediction, target) -> ndarray:
         """
         Calculate CrossEntropyLoss gradient.
 
