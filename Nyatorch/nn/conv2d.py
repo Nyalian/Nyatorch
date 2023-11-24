@@ -133,7 +133,6 @@ class Conv2dGPU(ConvNd):
         self.bias = np.random.rand(1, self.out_channel)
         self.gradient_weights = np.zeros_like(self.weights)
         self.gradient_bias = np.zeros_like(self.bias)
-        self.filters = None
         self.inputs = None
 
     def forward(self, inputs: ndarray) -> ndarray:

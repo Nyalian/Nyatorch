@@ -1,5 +1,8 @@
+from Nyatorch.nn import Sequential
+
+
 class Optimizer:
-    def __init__(self, net, learning_rate) -> None:
+    def __init__(self, net: Sequential, learning_rate: float) -> None:
         self.net = net
         self.learning_rate = learning_rate
 

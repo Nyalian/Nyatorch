@@ -16,7 +16,7 @@ class Sequential(Module):
         self.outputs = None
         self.loss = loss
         for module in args:
-            self.add_module(module)
+            self._add_module(module)
 
     def __iter__(self) -> Iterator[Module]:
         return iter(self._modules)
@@ -27,7 +27,7 @@ class Sequential(Module):
     def def_loss(self, loss: Loss):
         self.loss = loss
 
-    def add_module(self, module: 'Module') -> None:
+    def _add_module(self, module: 'Module') -> None:
         self._modules.append(module)
 
     def forward(self, inputs):
@@ -38,8 +38,8 @@ class Sequential(Module):
         self.outputs = output
         return output
 
-    def backward(self, target: ndarray):
-        delta = self.loss.gradient(self.outputs, target)
+    def backward(self, label: ndarray):
+        delta = self.loss.gradient(self.outputs, label)
         for module in reversed(self):
             delta = module.backward(delta)
 
@@ -54,25 +54,25 @@ class Sequential(Module):
         for module, para in zip(self, module_list):
             module.set_parameter(para)
 
-    def hebb(self, input: ndarray, target: ndarray, learning_rate):
+    def hebb(self, input: ndarray, label: ndarray, learning_rate):
         """
 
         :param learning_rate:
         :param input: [batch_size, train_x_feature]
-        :param target: [batch, train_y_feature]
+        :param label: [batch, train_y_feature]
         """
         for module in self._modules:
             if isinstance(module, LinearLayer):
-                module.weights += learning_rate * (input @ target.T)
+                module.weights += learning_rate * (input @ label.T)
 
-    def mlp_func(self, input: ndarray, output: ndarray, target: ndarray):
+    def mlp_func(self, input: ndarray, output: ndarray, label: ndarray):
         """
 
         :param input: [batch_size, train_x_feature]
         :param output: [batch_size, out_feature]
-        :param target: [batch_size, train_y_feature]
+        :param label: [batch_size, train_y_feature]
         """
         for module in self._modules:
             if isinstance(module, LinearLayer):
-                module.weights += input.T @ (target - output)
-                module.bias += (target - output).sum(axis=0, keepdims=True)
+                module.weights += input.T @ (label - output)
+                module.bias += (label - output).sum(axis=0, keepdims=True)
