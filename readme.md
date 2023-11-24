@@ -1,6 +1,5 @@
 # 介绍
 
---- 
 Nyatorch 是一个神经网络框架，提供了最基础的全连接层和卷积网络框架  
 主要特点如下：
 
@@ -19,15 +18,11 @@ Nyatorch 是一个神经网络框架，提供了最基础的全连接层和卷�
 
 # requirements
 
----
-
 - numpy
 - numba （如果使用GPU版卷积网络）
 - cuda 核心（如果使用GPU版卷积网络）
 
 # 结构
-
----
 
 ## Nyatorch.utils
 
