@@ -63,7 +63,7 @@ class Sequential(Module):
         """
         for module in self._modules:
             if isinstance(module, LinearLayer):
-                module.weights += learning_rate * (input.T @ target)
+                module.weights += learning_rate * (input @ target.T)
 
     def mlp_func(self, input: ndarray, output: ndarray, target: ndarray):
         """
