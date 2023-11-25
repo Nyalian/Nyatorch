@@ -1,7 +1,7 @@
 import numpy as np
 from Nyatorch import nn
 
-from Nyatorch.utils import MeanSquaredError, SGD
+from Nyatorch.utils import MeanSquaredError, GradientDescent
 from Nyatorch.utils.data import DataLoader
 
 
@@ -21,7 +21,7 @@ learning_rate = 0.5
 loss = MeanSquaredError()
 net.def_loss(loss)
 
-optimizer = SGD(net, learning_rate)
+optimizer = GradientDescent(net, learning_rate)
 for epoch in range(num_epochs):
     total_loss = 0
 

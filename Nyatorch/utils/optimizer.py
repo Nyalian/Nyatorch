@@ -10,7 +10,7 @@ class Optimizer:
         pass
 
 
-class SGD(Optimizer):
+class GradientDescent(Optimizer):
     def update(self) -> None:
         for module in self.net:
             module.update(self.learning_rate)

@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 from numpy import ndarray
 
@@ -45,14 +47,14 @@ class LinearLayer(Module):
         self.gradient_bias = delta.sum(axis=0, keepdims=True)
         return delta @ self.weights.T
 
-    def get_parameter(self) -> dict[str, ndarray]:
+    def get_parameter(self) -> Dict[str, ndarray]:
         """
         Get the parameter of the fully connected layer.
         :return: the parameter
         """
         return {"weights": self.weights, "bias": self.bias}
 
-    def set_parameter(self, parameter: dict[str, ndarray]) -> None:
+    def set_parameter(self, parameter: Dict[str, ndarray]) -> None:
         """
         Set the parameter of the fully connected layer.
 
