@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 from numba import cuda
 from numpy import ndarray
@@ -101,10 +103,10 @@ class Conv2d(ConvNd):
 
         return d_result
 
-    def get_parameter(self) -> dict[str, ndarray]:
+    def get_parameter(self) -> Dict[str, ndarray]:
         return {"weights": self.weights, "bias": self.bias}
 
-    def set_parameter(self, parameter: dict[str, ndarray]) -> None:
+    def set_parameter(self, parameter: Dict[str, ndarray]) -> None:
         self.weights = parameter["weights"]
         self.bias = parameter["bias"]
 
@@ -214,10 +216,10 @@ class Conv2dGPU(ConvNd):
 
         return delta_input
 
-    def get_parameter(self) -> dict[str, ndarray]:
+    def get_parameter(self) -> Dict[str, ndarray]:
         return {"weights": self.weights, "bias": self.bias}
 
-    def set_parameter(self, parameter: dict[str, ndarray]) -> None:
+    def set_parameter(self, parameter: Dict[str, ndarray]) -> None:
         self.weights = parameter["weights"]
         self.bias = parameter["bias"]
 
