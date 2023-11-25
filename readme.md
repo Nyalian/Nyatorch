@@ -69,7 +69,7 @@ MSE损失函数，用于计算损失和反向传播更新
 import numpy as np
 from Nyatorch import nn
 
-from Nyatorch.utils import MeanSquaredError, SGD
+from Nyatorch.utils import MeanSquaredError, GradientDescent
 from Nyatorch.utils.data import DataLoader
 
 net = nn.Sequential(
@@ -89,7 +89,7 @@ loss = MeanSquaredError()
 net.def_loss(loss)
 
 # 定义优化器
-optimizer = SGD(net, learning_rate)
+optimizer = GradientDescent(net, learning_rate)
 
 for epoch in range(num_epochs):
     total_loss = 0
@@ -389,7 +389,7 @@ for x, y in train:
 from tqdm import tqdm
 
 from Nyatorch import nn
-from Nyatorch.utils import CrossEntropy, SGD, accuracy
+from Nyatorch.utils import CrossEntropy, GradientDescent, accuracy
 from Nyatorch.utils.data import MINST_loader
 
 # 获取训练集和测试集合
@@ -415,7 +415,7 @@ learning_rate = 0.001
 # 定义损失函数，传入损失函数，定义优化器
 loss = CrossEntropy()
 net.def_loss(loss)
-optimizer = SGD(net, learning_rate)
+optimizer = GradientDescent(net, learning_rate)
 
 for epoch in range(num_epochs):
 

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 from numpy import ndarray
 
 import numpy as np
@@ -29,7 +29,7 @@ class DataLoader:
             self.sample = sample
             self.label = label
 
-    def __iter__(self) -> tuple[ndarray, ndarray]:
+    def __iter__(self) -> Tuple[ndarray, ndarray]:
         """
         Iterator used for outputting samples and labels.
 
@@ -47,7 +47,7 @@ class DataLoader:
         """
         return self.nums_batch
 
-    def get_all(self) -> tuple[ndarray, ndarray]:
+    def get_all(self) -> Tuple[ndarray, ndarray]:
         """
 
         :return: All samples and labels.

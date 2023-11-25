@@ -1,7 +1,7 @@
 from tqdm import tqdm
 
 from Nyatorch import nn
-from Nyatorch.utils import CrossEntropy, SGD, accuracy
+from Nyatorch.utils import CrossEntropy, GradientDescent, accuracy
 from Nyatorch.utils.data import MINST_loader
 
 train, test = MINST_loader(conv=True, batch_size=64)
@@ -21,7 +21,7 @@ num_epochs = 10
 learning_rate = 0.001
 loss = CrossEntropy()
 net.def_loss(loss)
-optimizer = SGD(net, learning_rate)
+optimizer = GradientDescent(net, learning_rate)
 
 for epoch in range(num_epochs):
     total_loss = 0

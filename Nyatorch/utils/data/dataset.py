@@ -1,11 +1,11 @@
 import gzip
 import numpy as np
 
-from typing import Optional
+from typing import Optional, Tuple
 from .loader import DataLoader
 
 
-def MINST_loader(conv: Optional[bool] = False, batch_size: Optional[int] = 32) -> tuple[DataLoader, DataLoader]:
+def MINST_loader(conv: Optional[bool] = False, batch_size: Optional[int] = 32) -> Tuple[DataLoader, DataLoader]:
     """
 
     :return: MNIST data used for the fully connected layer and Convolutional layer.
