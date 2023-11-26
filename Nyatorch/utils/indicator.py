@@ -1,8 +1,6 @@
 import numpy as np
 from numpy import ndarray
 
-from Nyatorch.utils import confusion_matrix
-
 
 def confusion_matrix(y_true, y_pred):
     classes = np.unique(y_true)
