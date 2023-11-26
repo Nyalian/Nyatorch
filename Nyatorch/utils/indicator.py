@@ -49,6 +49,7 @@ def precision(prediction: ndarray, label: ndarray) -> float:
     return prec * 100
 
 
+
 def f_score(prediction: ndarray, label: ndarray) -> float:
     """
     Compute the F1 score of predictions and labels, the input should be two sets of one-hot encoded data.
