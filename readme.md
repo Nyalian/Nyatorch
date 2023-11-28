@@ -19,6 +19,7 @@ Nyatorch 是一个神经网络框架，提供了最基础的全连接层和卷�
 # requirements
 
 - numpy
+- sklearn （用于输出混淆矩阵）
 - numba （如果使用GPU版卷积网络）
 - cuda 核心（如果使用GPU版卷积网络）
 
